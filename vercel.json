@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "heysalad.cash"
+        }
+      ],
+      "destination": "https://www.heysalad.cash/:path*",
+      "permanent": true
+    }
+  ]
+}
