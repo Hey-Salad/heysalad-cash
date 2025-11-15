@@ -2,11 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { createPublicClient, http } from "viem";
+import { polygon, base } from "viem/chains";
 
 // Schema validation
 const WalletIdSchema = z.object({
   walletId: z.string(),
-  blockchain: z.enum(["polygon", "base"]),
+  blockchain: z.enum(["polygon", "base", "arc"]),
 });
 
 const ResponseSchema = z.object({
@@ -15,6 +17,16 @@ const ResponseSchema = z.object({
 });
 
 type WalletBalanceResponse = z.infer<typeof ResponseSchema>;
+
+// USDC token addresses on each network
+const USDC_ADDRESSES = {
+  polygon: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+  base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  arc: "0x0000000000000000000000000000000000000000", // Update when available
+};
+
+// USDC has 6 decimals
+const USDC_DECIMALS = 6;
 
 export async function POST(
   req: NextRequest,
@@ -30,126 +42,81 @@ export async function POST(
       );
     }
 
-    const { walletId } = parseResult.data;
-    const normalizedWalletId = walletId.toLowerCase();
-    const normalizedNetwork = parseResult.data.blockchain.toUpperCase();
+    const { walletId, blockchain } = parseResult.data;
+    const walletAddress = walletId.toLowerCase() as `0x${string}`;
+    const normalizedNetwork = blockchain.toUpperCase();
 
     // Get the Supabase client
     const supabase = await createSupabaseServerClient();
 
-    // Fetch the wallet information from the database
-    const { data: wallet, error: walletError } = await supabase
-      .from("wallets")
-      .select("*")
-      .eq("wallet_address", normalizedWalletId)
-      .eq("blockchain", normalizedNetwork)
-      .single();
-
-    if (walletError || !wallet) {
-      console.error("Error fetching wallet:", walletError);
-      return NextResponse.json(
-        { error: "Wallet not found in database" },
-        { status: 404 },
-      );
-    }
-
-    // Get the wallet address and network information
-    const walletAddress = wallet.wallet_address;
-
-    if (!walletAddress) {
-      console.error("Wallet address not found in database record");
-      return NextResponse.json(
-        { error: "Wallet address not found in database record" },
-        { status: 400 },
-      );
-    }
-
-    const networkName = wallet.blockchain;
-    const blockchain = determineBlockchain(networkName);
-
     try {
-      // Use the blockchain + address endpoint to get balances
-      console.log(`Fetching balance for ${blockchain}/${walletAddress}`);
-      const balanceResponse = await axios.get(
-        `https://api.circle.com/v1/w3s/buidl/wallets/${blockchain}/${walletAddress}/balances`,
-        {
-          headers: {
-            "X-Request-Id": crypto.randomUUID(),
-            Authorization: `Bearer ${process.env.CIRCLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      // Query blockchain directly using viem
+      let usdcBalance = "0";
 
-      console.log("Circle API response:", JSON.stringify(balanceResponse.data, null, 2));
+      if (blockchain === "polygon") {
+        const rpcUrl = process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://polygon-rpc.com";
+        const publicClient = createPublicClient({
+          chain: polygon,
+          transport: http(rpcUrl),
+        });
 
-      // FIXED: Extract from data.tokenBalances instead of tokenBalances
-      // The Circle API wraps the response in a data object
-      const usdcBalance =
-        balanceResponse.data?.data?.tokenBalances?.find(
-          (balance: any) => balance.token?.symbol === "USDC",
-        )?.amount || "0";
+        const tokenAddress = USDC_ADDRESSES.polygon as `0x${string}`;
+        const result = await publicClient.readContract({
+          address: tokenAddress,
+          abi: [
+            {
+              name: "balanceOf",
+              type: "function",
+              stateMutability: "view",
+              inputs: [{ name: "account", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+          ],
+          functionName: "balanceOf",
+          args: [walletAddress],
+        });
 
-      console.log(`USDC balance found: ${usdcBalance}`);
+        // Convert from token units to human readable (USDC has 6 decimals)
+        usdcBalance = (Number(result) / 10 ** USDC_DECIMALS).toString();
+      } else if (blockchain === "base") {
+        const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://mainnet.base.org";
+        const publicClient = createPublicClient({
+          chain: base,
+          transport: http(rpcUrl),
+        });
+
+        const tokenAddress = USDC_ADDRESSES.base as `0x${string}`;
+        const result = await publicClient.readContract({
+          address: tokenAddress,
+          abi: [
+            {
+              name: "balanceOf",
+              type: "function",
+              stateMutability: "view",
+              inputs: [{ name: "account", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+          ],
+          functionName: "balanceOf",
+          args: [walletAddress],
+        });
+
+        // Convert from token units to human readable (USDC has 6 decimals)
+        usdcBalance = (Number(result) / 10 ** USDC_DECIMALS).toString();
+      }
+
+      console.log(`USDC balance for ${walletAddress} on ${blockchain}: ${usdcBalance}`);
 
       // Update wallet balance in database
       await supabase
         .from("wallets")
         .update({ balance: usdcBalance })
-        .eq("circle_wallet_id", normalizedWalletId)
+        .eq("wallet_address", walletAddress)
         .eq("blockchain", normalizedNetwork);
 
       return NextResponse.json({ balance: usdcBalance });
     } catch (error) {
-      console.error("Error fetching balance from Circle API:", error);
-
-      if (axios.isAxiosError(error)) {
-        console.error("API error details:", {
-          status: error.response?.status,
-          data: error.response?.data,
-        });
-
-        // If the first blockchain fails, try the alternate blockchain
-        // This handles wallets that might be on a different network than expected
-        const alternateBlockchain = blockchain.includes("MATIC")
-          ? "BASE-MAINNET" // Try Base if Polygon fails
-          : "MATIC-MAINNET"; // Try Polygon if Base fails
-
-        try {
-          const retryResponse = await axios.get(
-            `https://api.circle.com/v1/w3s/buidl/wallets/${alternateBlockchain}/${walletAddress}/balances`,
-            {
-              headers: {
-                "X-Request-Id": crypto.randomUUID(),
-                Authorization: `Bearer ${process.env.CIRCLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              params: {
-                name: "USDC",
-              },
-            },
-          );
-
-          // FIXED: Extract from data.tokenBalances instead of tokenBalances
-          const retryBalance =
-            retryResponse.data?.data?.tokenBalances?.find(
-              (balance: any) => balance.token?.symbol === "USDC",
-            )?.amount || "0";
-
-          // Update wallet balance in database
-          await supabase
-            .from("wallets")
-            .update({ balance: retryBalance })
-            .eq("circle_wallet_id", normalizedWalletId)
-            .eq("blockchain", normalizedNetwork);
-
-          return NextResponse.json({ balance: retryBalance });
-        } catch (retryError) {
-          console.error("Error on retry attempt:", retryError);
-          // Continue to return 0 if both attempts fail
-        }
-      }
-
+      console.error("Error fetching balance from blockchain:", error);
       // Return 0 balance instead of error for better UX
       return NextResponse.json({ balance: "0" });
     }
@@ -168,19 +135,4 @@ export async function POST(
   }
 }
 
-/**
- * Converts a network name to Circle's blockchain parameter format
- */
-function determineBlockchain(networkName: string): string {
-  // Normalize the network name to lowercase for comparison
-  const normalizedNetwork = networkName.toLowerCase();
 
-  if (normalizedNetwork.includes("polygon")) {
-    return "MATIC-MAINNET"; // Polygon mainnet
-  }
-  if (normalizedNetwork.includes("base")) {
-    return "BASE-MAINNET"; // Base mainnet
-  }
-  // Default to Polygon mainnet if no match found
-  return "MATIC-MAINNET";
-}
