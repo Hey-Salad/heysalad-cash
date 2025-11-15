@@ -147,7 +147,11 @@ export function PasskeySetup({ username }: PasskeySetupProps) {
 
             <Button
                 variant="outline"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => {
+                    // Force navigation to dashboard
+                    window.location.href = '/dashboard';
+                }}
+                disabled={isCreating}
                 className="w-full max-w-xs"
             >
                 Skip for now

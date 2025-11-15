@@ -17,6 +17,7 @@ import {
   WebAuthnMode,
 } from "@circle-fin/modular-wallets-core";
 import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 
 const clientKey = process.env.NEXT_PUBLIC_CIRCLE_CLIENT_KEY;
 const clientUrl = process.env.NEXT_PUBLIC_CIRCLE_CLIENT_URL;
@@ -96,23 +97,26 @@ export default function CodeConfirmation() {
   };
 
   return (
-    <div className="flex flex-col w-full flex-1">
-      <Button
-        className="-mt-[46px] mb-[20px]"
-        variant="ghost"
-        size="icon"
-        onClick={() => router.push("/sign-in")}
-      >
-        <ArrowLeft />
-      </Button>
-      <div className="flex-1 flex flex-col min-w-64">
-        <h1 className="text-2xl font-bold mb-[20px]">
-          Please enter the code sent to
+    <div className="flex flex-col w-full flex-1 items-center justify-center px-5">
+      <div className="flex flex-col min-w-64 w-full max-w-sm">
+        <div className="flex justify-center mb-8">
+          <Image 
+            src="/heysalad-logo-black.png" 
+            alt="HeySalad" 
+            width={180} 
+            height={50}
+            priority
+            className="object-contain"
+          />
+        </div>
+
+        <h1 className="text-2xl font-bold mb-8 text-black text-center">
+          Enter the code sent to
         </h1>
 
-        <p className="text-xl text-muted-foreground mb-[20px]">{phone}</p>
+        <p className="text-lg text-black text-center mb-8">{phone}</p>
 
-        <div className="flex flex-col gap-4 flex-1">
+        <div className="flex flex-col gap-4">
           <div className="space-y-2 mx-auto">
             <InputOTP
               autoFocus
@@ -121,31 +125,40 @@ export default function CodeConfirmation() {
               onChange={setConfirmationCode}
             >
               <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
+                <InputOTPSlot index={0} className="border-black text-black" />
+                <InputOTPSlot index={1} className="border-black text-black" />
+                <InputOTPSlot index={2} className="border-black text-black" />
               </InputOTPGroup>
               <InputOTPSeparator />
               <InputOTPGroup>
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
+                <InputOTPSlot index={3} className="border-black text-black" />
+                <InputOTPSlot index={4} className="border-black text-black" />
+                <InputOTPSlot index={5} className="border-black text-black" />
               </InputOTPGroup>
             </InputOTP>
           </div>
 
           {error && (
-            <small className="text-sm text-red-600 font-medium leading-none">
+            <small className="text-sm text-red-600 font-medium leading-none text-center">
               {error}
             </small>
           )}
 
           <Button
             disabled={isConfirmationCodeInvalid || loading}
-            className="w-full mt-auto"
+            className="w-full mt-4 bg-black hover:bg-black/90 text-white"
             onClick={handleCodeValidation}
           >
-            Next
+            {loading ? 'Verifying...' : 'Next'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/sign-in")}
+            className="w-full text-black hover:text-black/90 hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
           </Button>
         </div>
       </div>
