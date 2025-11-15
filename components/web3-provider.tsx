@@ -527,6 +527,18 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         // Async initialization function
         const initializeFromDatabase = async () => {
             try {
+                // Check if we're on an auth page - skip initialization
+                if (typeof window !== 'undefined') {
+                    const path = window.location.pathname;
+                    if (path.includes('/sign-in') || 
+                        path.includes('/code-confirmation') || 
+                        path.includes('/onboarding') ||
+                        path === '/') {
+                        setIsInitialized(true);
+                        return;
+                    }
+                }
+
                 // Load credential from database via API
                 const credentialData = await loadCredential();
 
