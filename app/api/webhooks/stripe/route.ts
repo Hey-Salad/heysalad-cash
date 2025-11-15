@@ -38,28 +38,31 @@ export async function POST(req: NextRequest) {
     console.log(`Received Stripe event: ${event.type}`);
 
     // Handle crypto onramp events (not in Stripe types yet)
-    if (event.type === "crypto_onramp_session.completed") {
+    // Using type assertion to bypass TypeScript checking for new event types
+    const eventType = event.type as string;
+    
+    if (eventType === "crypto_onramp_session.completed") {
       const session = event.data.object;
       console.log("Crypto onramp completed:", session);
       // TODO: Update user balance or trigger notification
       return NextResponse.json({ received: true });
     }
 
-    if (event.type === "crypto_onramp_session.failed") {
+    if (eventType === "crypto_onramp_session.failed") {
       const failedSession = event.data.object;
       console.log("Crypto onramp failed:", failedSession);
       // TODO: Notify user of failure
       return NextResponse.json({ received: true });
     }
 
-    if (event.type === "crypto_onramp_session.updated") {
+    if (eventType === "crypto_onramp_session.updated") {
       const updatedSession = event.data.object;
       console.log("Crypto onramp updated:", updatedSession);
       return NextResponse.json({ received: true });
     }
 
     // Handle other event types
-    console.log(`Unhandled event type: ${event.type}`);
+    console.log(`Unhandled event type: ${eventType}`);
 
     return NextResponse.json({ received: true });
   } catch (error) {
