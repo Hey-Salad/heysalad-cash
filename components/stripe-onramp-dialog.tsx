@@ -8,8 +8,6 @@ import {
   import { useCallback, useEffect, useState } from "react";
   import { loadStripeOnramp } from "@stripe/crypto";
   import { useWeb3 } from "./web3-provider";
-  import { DialogTrigger } from "@radix-ui/react-dialog";
-  import { Button } from "@/components/ui/button";
   import { useTheme } from "next-themes";
   import { toast } from "sonner";
 
@@ -54,11 +52,6 @@ import {
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogTrigger asChild>
-          <Button className="flex-1 py-3 text-lg font-semibold rounded-full">
-            Add USDC
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle></DialogTitle>
