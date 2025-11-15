@@ -181,11 +181,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
                 const data = await response.json();
 
                 // If credential exists in the response
-                if (data && data.credential) {
-                    // Parse the credential string from the database
-                    const parsedCredential = JSON.parse(data.credential[0].passkey_credential) as P256Credential;
-                    setCredential(parsedCredential);
-                    return parsedCredential;
+                if (data && data.credential && Array.isArray(data.credential) && data.credential.length > 0) {
+                    // Check if the first credential has passkey_credential
+                    if (data.credential[0]?.passkey_credential) {
+                        // Parse the credential string from the database
+                        const parsedCredential = JSON.parse(data.credential[0].passkey_credential) as P256Credential;
+                        setCredential(parsedCredential);
+                        return parsedCredential;
+                    }
                 }
             } catch (e) {
                 console.error('Error loading credential from database:', e);
