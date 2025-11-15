@@ -48,21 +48,50 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
   const startCamera = async () => {
     try {
       setScanning(true);
+      
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error("Camera not supported on this device. Please use upload instead.");
+        setScanning(false);
+        return;
+      }
+
       const codeReader = new BrowserMultiFormatReader();
       codeReaderRef.current = codeReader;
       
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" } // Use back camera on mobile
-      });
+      // Request camera with multiple fallback options
+      let mediaStream: MediaStream;
+      try {
+        // Try back camera first (for mobile)
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+      } catch (err) {
+        // Fallback to any available camera
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
+      }
+      
       setStream(mediaStream);
       setShowCamera(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.setAttribute("playsinline", "true"); // Important for iOS
+        videoRef.current.setAttribute("autoplay", "true");
+        videoRef.current.setAttribute("muted", "true");
+        
+        // Wait for video to start playing
+        await videoRef.current.play();
         
         // Start continuous scanning
         const scanFromVideo = async () => {
-          if (!videoRef.current || !showCamera) return;
+          if (!videoRef.current || !stream) return;
           
           try {
             const result = await codeReader.decodeFromVideoElement(videoRef.current);
@@ -70,27 +99,39 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
               const scannedText = result.getText();
               handleScannedQR(scannedText);
               stopCamera();
+              return;
             }
           } catch (error) {
-            // No QR code found yet, keep scanning
-            if (showCamera) {
-              requestAnimationFrame(scanFromVideo);
-            }
+            // No QR code found yet, continue scanning
+          }
+          
+          // Continue scanning
+          if (stream && videoRef.current) {
+            setTimeout(scanFromVideo, 100); // Scan every 100ms
           }
         };
         
-        // Wait for video to be ready
-        videoRef.current.onloadedmetadata = () => {
-          scanFromVideo();
-        };
+        // Start scanning after a short delay
+        setTimeout(scanFromVideo, 500);
       }
       
       setScanning(false);
       toast.success("Camera ready! Point at a QR code to scan.");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error accessing camera:", error);
-      toast.error("Could not access camera. Please use upload instead.");
+      
+      let errorMessage = "Could not access camera. ";
+      if (error.name === "NotAllowedError") {
+        errorMessage += "Please allow camera permissions in your browser settings.";
+      } else if (error.name === "NotFoundError") {
+        errorMessage += "No camera found on this device.";
+      } else {
+        errorMessage += "Please use upload instead.";
+      }
+      
+      toast.error(errorMessage);
       setScanning(false);
+      setShowCamera(false);
     }
   };
 
@@ -205,6 +246,7 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-cover"
                 />
                 <Button
