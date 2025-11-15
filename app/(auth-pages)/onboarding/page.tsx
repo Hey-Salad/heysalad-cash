@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/utils/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,35 @@ export default function Onboarding() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [username, setUserName] = useState('')
+  const [checkingProfile, setCheckingProfile] = useState(true)
+
+  // Check if user already has a profile
+  useEffect(() => {
+    const checkProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/sign-in');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select()
+        .eq("auth_user_id", user.id)
+        .single();
+
+      if (profile) {
+        // User already has a profile, redirect to dashboard
+        router.push('/dashboard');
+        return;
+      }
+
+      setCheckingProfile(false);
+    };
+
+    checkProfile();
+  }, [router, supabase])
 
   const isProfileInvalid = useMemo(() => {
     return !firstName || !lastName || !username
@@ -63,6 +92,14 @@ export default function Onboarding() {
     }
 
     router.push('/dashboard');
+  }
+
+  if (checkingProfile) {
+    return (
+      <div className="flex flex-col w-full flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
   }
 
   return (

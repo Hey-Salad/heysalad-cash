@@ -30,7 +30,8 @@ export default async function Dashboard() {
     .single();
 
   if (!profile) {
-    return redirect("/sign-in");
+    // User is authenticated but hasn't completed onboarding
+    return redirect("/onboarding");
   }
 
   // Check for wallets in database
