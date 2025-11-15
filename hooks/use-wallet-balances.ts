@@ -13,6 +13,11 @@ export function useWalletBalances() {
   const supabaseRef = useRef(createSupabaseBrowserClient());
 
   const [balances, setBalances] = useState({
+    arc: {
+      native: 0,
+      token: 0,
+      loading: true,
+    },
     polygon: {
       native: 0,
       token: 0,
@@ -38,7 +43,7 @@ export function useWalletBalances() {
     balance: string;
   }
 
-  type ChainType = "polygon" | "base";
+  type ChainType = "arc" | "polygon" | "base";
 
   // Fetch balance directly from Supabase
   const fetchBalanceFromDB = useCallback(
@@ -95,8 +100,9 @@ export function useWalletBalances() {
   const loadBalances = useCallback(async () => {
     if (!isConnected || isRefreshingRef.current) return;
 
-    if (!accounts.polygon.address && !accounts.base.address) {
+    if (!accounts.polygon.address && !accounts.base.address && !accounts.arc?.address) {
       setBalances((prev) => ({
+        arc: { ...prev.arc, loading: false },
         polygon: { ...prev.polygon, loading: false },
         base: { ...prev.base, loading: false },
       }));
@@ -107,6 +113,10 @@ export function useWalletBalances() {
 
     // First set loading state
     setBalances((prev) => ({
+      arc: {
+        ...prev.arc,
+        loading: Boolean(accounts.arc?.address),
+      },
       polygon: {
         ...prev.polygon,
         loading: Boolean(accounts.polygon.address),
@@ -120,6 +130,9 @@ export function useWalletBalances() {
     try {
       // STEP 1: Try to get balances from DB first (fast)
       const dbResults = await Promise.allSettled([
+        accounts.arc?.address
+          ? fetchBalanceFromDB(accounts.arc.address, "arc")
+          : Promise.resolve("0"),
         accounts.polygon.address
           ? fetchBalanceFromDB(accounts.polygon.address, "polygon")
           : Promise.resolve("0"),
@@ -128,13 +141,21 @@ export function useWalletBalances() {
           : Promise.resolve("0"),
       ]);
 
-      const polygonDBBalance =
+      const arcDBBalance =
         dbResults[0].status === "fulfilled" ? dbResults[0].value : "0";
-      const baseDBBalance =
+      const polygonDBBalance =
         dbResults[1].status === "fulfilled" ? dbResults[1].value : "0";
+      const baseDBBalance =
+        dbResults[2].status === "fulfilled" ? dbResults[2].value : "0";
 
       // Update state with DB values immediately (faster UX)
       setBalances((prev) => ({
+        arc: {
+          native: prev.arc.native,
+          token: parseFloat(arcDBBalance) || 0,
+          // Keep loading true while we fetch from API
+          loading: Boolean(accounts.arc?.address),
+        },
         polygon: {
           native: prev.polygon.native,
           token: parseFloat(polygonDBBalance) || 0,
@@ -150,6 +171,9 @@ export function useWalletBalances() {
 
       // STEP 2: Then fetch from API to ensure latest values (slower but accurate)
       const apiResults = await Promise.allSettled([
+        accounts.arc?.address
+          ? fetchBalanceFromAPI(accounts.arc.address, "arc")
+          : Promise.resolve("0"),
         accounts.polygon.address
           ? fetchBalanceFromAPI(accounts.polygon.address, "polygon")
           : Promise.resolve("0"),
@@ -158,17 +182,26 @@ export function useWalletBalances() {
           : Promise.resolve("0"),
       ]);
 
-      const polygonAPIBalance =
+      const arcAPIBalance =
         apiResults[0].status === "fulfilled"
           ? apiResults[0].value
-          : polygonDBBalance;
-      const baseAPIBalance =
+          : arcDBBalance;
+      const polygonAPIBalance =
         apiResults[1].status === "fulfilled"
           ? apiResults[1].value
+          : polygonDBBalance;
+      const baseAPIBalance =
+        apiResults[2].status === "fulfilled"
+          ? apiResults[2].value
           : baseDBBalance;
 
       // Update state with API values and finish loading
       setBalances((prev) => ({
+        arc: {
+          native: prev.arc.native,
+          token: parseFloat(arcAPIBalance) || prev.arc.token,
+          loading: false,
+        },
         polygon: {
           native: prev.polygon.native,
           token: parseFloat(polygonAPIBalance) || prev.polygon.token,
@@ -187,6 +220,7 @@ export function useWalletBalances() {
       toast.error("Failed to refresh balances");
 
       setBalances((prev) => ({
+        arc: { ...prev.arc, loading: false },
         polygon: { ...prev.polygon, loading: false },
         base: { ...prev.base, loading: false },
       }));
@@ -292,7 +326,7 @@ export function useWalletBalances() {
     }
 
     // Skip if no wallets connected
-    if (!accounts.polygon.address && !accounts.base.address) return;
+    if (!accounts.polygon.address && !accounts.base.address && !accounts.arc?.address) return;
 
     // Create a single channel for all wallet updates
     const walletChannel = supabaseRef.current
@@ -310,6 +344,11 @@ export function useWalletBalances() {
           const blockchain = payload.new.blockchain;
 
           if (
+            blockchain === "ARC" &&
+            address === accounts.arc?.address?.toLowerCase()
+          ) {
+            updateWalletBalance(payload, "arc");
+          } else if (
             blockchain === "BASE" &&
             address === accounts.base.address?.toLowerCase()
           ) {
@@ -334,7 +373,7 @@ export function useWalletBalances() {
         realtimeChannelRef.current = null;
       }
     };
-  }, [accounts.polygon.address, accounts.base.address, updateWalletBalance]);
+  }, [accounts.arc?.address, accounts.polygon.address, accounts.base.address, updateWalletBalance]);
 
   return {
     balances,

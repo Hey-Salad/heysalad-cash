@@ -20,12 +20,14 @@ import {
 
 // Token addresses for USDC on each network
 const USDC_ADDRESSES = {
+    arc: '0x0000000000000000000000000000000000000000', // USDC on Arc Mainnet (TBD - update when available)
     polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // USDC on Polygon Mainnet
     base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base Mainnet
 };
 
 // USDC decimals - typically 6 for USDC
 const USDC_DECIMALS = {
+    arc: 6,
     polygon: 6,
     base: 6,
 };
@@ -37,6 +39,12 @@ interface ChainConfig {
 }
 
 interface ChainAccounts {
+    arc?: {
+        smartAccount: SmartAccount | null;
+        address: string | null;
+        bundlerClient: any | null;
+        publicClient: any | null;
+    };
     polygon: {
         smartAccount: SmartAccount | null;
         address: string | null;
@@ -52,6 +60,10 @@ interface ChainAccounts {
 }
 
 interface TokenBalances {
+    arc?: {
+        usdc: string;
+        native: string;
+    };
     polygon: {
         usdc: string;
         native: string;
@@ -546,7 +558,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get active chain address
     const getAddress = async (): Promise<string | null> => {
         const activeAccount = accounts[activeChain];
-        if (!activeAccount.address) {
+        if (!activeAccount || !activeAccount.address) {
             setError(`Account not initialized for ${activeChain} chain`);
             return null;
         }
@@ -557,7 +569,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Send native token transaction
     const sendTransaction = async (to: string, value: string): Promise<string | null> => {
         const activeAccount = accounts[activeChain];
-        if (!activeAccount.bundlerClient || !activeAccount.smartAccount) {
+        if (!activeAccount || !activeAccount.bundlerClient || !activeAccount.smartAccount) {
             setError(`Account not initialized for ${activeChain} chain`);
             return null;
         }
@@ -597,7 +609,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Send USDC tokens
     const sendUSDC = async (to: string, amount: string): Promise<string | null> => {
         const activeAccount = accounts[activeChain];
-        if (!activeAccount.bundlerClient || !activeAccount.smartAccount) {
+        if (!activeAccount || !activeAccount.bundlerClient || !activeAccount.smartAccount) {
             setError(`Account not initialized for ${activeChain} chain`);
             return null;
         }
@@ -642,13 +654,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get USDC balance for active chain
     const getUSDCBalance = async (): Promise<string | null> => {
-        return balances[activeChain].usdc;
+        const chainBalance = balances[activeChain];
+        return chainBalance ? chainBalance.usdc : null;
     };
 
     // Sign a message
     const signMessage = async (message: string): Promise<string | null> => {
         const activeAccount = accounts[activeChain];
-        if (!activeAccount.smartAccount) {
+        if (!activeAccount || !activeAccount.smartAccount) {
             setError(`Account not initialized for ${activeChain} chain`);
             return null;
         }
@@ -670,7 +683,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sign typed data according to EIP-712
     const signTypedData = async (data: any): Promise<string | null> => {
         const activeAccount = accounts[activeChain];
-        if (!activeAccount.smartAccount) {
+        if (!activeAccount || !activeAccount.smartAccount) {
             setError(`Account not initialized for ${activeChain} chain`);
             return null;
         }

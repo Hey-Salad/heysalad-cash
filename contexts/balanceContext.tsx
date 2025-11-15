@@ -6,6 +6,11 @@ import { useWalletBalances } from "@/hooks/use-wallet-balances";
 // Define the shape of our balance context
 interface BalanceContextType {
   balances: {
+    arc: {
+      native: number;
+      token: number;
+      loading: boolean;
+    };
     polygon: {
       native: number;
       token: number;
