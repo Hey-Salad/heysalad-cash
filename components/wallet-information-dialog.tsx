@@ -30,8 +30,9 @@ export function WalletInformationDialog({ wallets }: WalletInformationDialogProp
 
   // Chain display names
   const chainNames: Record<string, string> = {
-    polygon: 'Polygon Amoy',
-    base: 'Base Sepolia'
+    arc: 'Arc Mainnet',
+    base: 'Base Mainnet',
+    polygon: 'Polygon Mainnet'
   };
 
   const copyAddress = (address: string) => {
@@ -64,18 +65,23 @@ export function WalletInformationDialog({ wallets }: WalletInformationDialogProp
           onValueChange={setActiveTab}
           className="w-full mt-4"
         >
-          <TabsList className="grid grid-cols-2 w-full">
-            {wallets.map((wallet) => (
-              <TabsTrigger key={wallet.chain} value={wallet.chain}>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${wallet.chain === 'polygon' ? 'bg-purple-500' : 'bg-blue-500'
-                      }`}
-                  ></div>
-                  {chainNames[wallet.chain] || wallet.blockchain}
-                </div>
-              </TabsTrigger>
-            ))}
+          <TabsList className="grid grid-cols-3 w-full">
+            {wallets.map((wallet) => {
+              const chainColor = 
+                wallet.chain === 'arc' ? 'bg-gradient-to-r from-blue-500 to-purple-500' :
+                wallet.chain === 'polygon' ? 'bg-purple-500' : 
+                'bg-blue-500';
+              
+              return (
+                <TabsTrigger key={wallet.chain} value={wallet.chain}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${chainColor}`}></div>
+                    <span className="hidden sm:inline">{chainNames[wallet.chain] || wallet.blockchain}</span>
+                    <span className="sm:hidden">{wallet.chain.toUpperCase()}</span>
+                  </div>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {wallets.map((wallet) => (

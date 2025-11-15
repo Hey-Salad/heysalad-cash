@@ -17,6 +17,7 @@ import {
     toCircleSmartAccount,
     toModularTransport,
 } from '@circle-fin/modular-wallets-core';
+import { arc } from '@/lib/chains/arc';
 
 interface PasskeySetupProps {
     username: string;
@@ -62,15 +63,15 @@ export function PasskeySetup({ username, isUpdate = false }: PasskeySetupProps) 
                     credential
                 });
 
-                // Create modular transport for Polygon
+                // Create modular transport for Arc
                 const modularTransport = toModularTransport(
-                    `${clientUrl}/polygon`,
+                    `${clientUrl}/arc`,
                     clientKey
                 );
 
                 // Create public client
                 const publicClient = createPublicClient({
-                    chain: polygon,
+                    chain: arc,
                     transport: modularTransport,
                 });
 

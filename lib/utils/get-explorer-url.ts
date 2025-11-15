@@ -1,8 +1,9 @@
-// Explorer URLs for different chains
+// Explorer URLs for different chains (Mainnet)
 export const getExplorerUrl = (chain: string, address: string) => {
   const explorers: Record<string, string> = {
-    polygon: `https://www.oklink.com/amoy/address/${address}`,
-    base: `https://sepolia.basescan.org/address/${address}`
+    arc: `https://explorer.arc.network/address/${address}`,
+    base: `https://basescan.org/address/${address}`,
+    polygon: `https://polygonscan.com/address/${address}`
   };
 
   return explorers[chain] || '#';

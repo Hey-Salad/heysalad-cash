@@ -53,8 +53,9 @@ export default async function Dashboard() {
 
   // Get all available wallets by blockchain
   const chainWallets = {
-    polygon: wallets?.find(w => w.blockchain === "POLYGON"),
-    base: wallets?.find(w => w.blockchain === "BASE")
+    arc: wallets?.find(w => w.blockchain === "ARC"),
+    base: wallets?.find(w => w.blockchain === "BASE"),
+    polygon: wallets?.find(w => w.blockchain === "POLYGON")
   };
 
   // Create wallet models for UI

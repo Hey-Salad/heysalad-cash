@@ -42,33 +42,48 @@ export function WalletBalance() {
     <>
       <Tabs
         defaultValue={activeChain}
-        onValueChange={value => setActiveChain(value as "polygon" | "base")}
+        onValueChange={value => setActiveChain(value as "arc" | "base" | "polygon")}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="polygon">
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="arc">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              Polygon
+              <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+              <span className="hidden sm:inline">Arc</span>
+              <span className="sm:hidden">ARC</span>
             </div>
           </TabsTrigger>
           <TabsTrigger value="base">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              Base
+              <span className="hidden sm:inline">Base</span>
+              <span className="sm:hidden">BSE</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="polygon">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="hidden sm:inline">Polygon</span>
+              <span className="sm:hidden">POL</span>
             </div>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="polygon" className="mt-4">
+        <TabsContent value="arc" className="mt-4">
           <div className="text-3xl font-bold">
-            {formatBalance({ value: balances.polygon.token, loading: balances.polygon.loading })}
+            {formatBalance({ value: balances.arc?.token || 0, loading: balances.arc?.loading || false })}
           </div>
         </TabsContent>
 
         <TabsContent value="base" className="mt-4">
           <div className="text-3xl font-bold">
             {formatBalance({ value: balances.base.token, loading: balances.base.loading })}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="polygon" className="mt-4">
+          <div className="text-3xl font-bold">
+            {formatBalance({ value: balances.polygon.token, loading: balances.polygon.loading })}
           </div>
         </TabsContent>
       </Tabs>

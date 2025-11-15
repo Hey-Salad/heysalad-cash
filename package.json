@@ -52,6 +52,7 @@
     "react": "18.2.0",
     "react-confetti": "^6.1.0",
     "react-dom": "18.2.0",
+    "react-webcam": "^7.2.0",
     "sonner": "^1.5.0",
     "stripe": "^18.0.0",
     "uuid": "^10.0.0",

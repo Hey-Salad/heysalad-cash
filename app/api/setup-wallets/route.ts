@@ -73,12 +73,12 @@ export async function POST(req: NextRequest) {
 
     if (existingWallets && existingWallets.length > 0) {
 
-      // Update existing Polygon wallet
-      const polygonWallet = existingWallets.find(
-        (w) => w.blockchain === "POLYGON"
+      // Update existing Arc wallet
+      const arcWallet = existingWallets.find(
+        (w) => w.blockchain === "ARC"
       );
-      if (polygonWallet) {
-        const { error: polygonUpdateError } = await supabase
+      if (arcWallet) {
+        const { error: arcUpdateError } = await supabase
           .from("wallets")
           .update({
             wallet_address: walletAddress,
@@ -86,10 +86,10 @@ export async function POST(req: NextRequest) {
             circle_wallet_id: walletAddress,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", polygonWallet.id);
+          .eq("id", arcWallet.id);
 
-        if (polygonUpdateError) {
-          console.error("Error updating Polygon wallet:", polygonUpdateError);
+        if (arcUpdateError) {
+          console.error("Error updating Arc wallet:", arcUpdateError);
         }
       }
 
@@ -112,6 +112,26 @@ export async function POST(req: NextRequest) {
           console.error("Error updating Base wallet:", baseUpdateError);
         }
       }
+
+      // Update existing Polygon wallet
+      const polygonWallet = existingWallets.find(
+        (w) => w.blockchain === "POLYGON"
+      );
+      if (polygonWallet) {
+        const { error: polygonUpdateError } = await supabase
+          .from("wallets")
+          .update({
+            wallet_address: walletAddress,
+            passkey_credential: credentialString,
+            circle_wallet_id: walletAddress,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", polygonWallet.id);
+
+        if (polygonUpdateError) {
+          console.error("Error updating Polygon wallet:", polygonUpdateError);
+        }
+      }
     } else {
       // Create new wallet records
       console.log("Creating new wallets for profile:", profileData.id);
@@ -122,7 +142,7 @@ export async function POST(req: NextRequest) {
           profile_id: profileData.id,
           wallet_address: walletAddress,
           wallet_type: "modular",
-          blockchain: "POLYGON",
+          blockchain: "ARC",
           account_type: "SCA",
           currency: "USDC",
           passkey_credential: credentialString,
@@ -133,6 +153,16 @@ export async function POST(req: NextRequest) {
           wallet_address: walletAddress,
           wallet_type: "modular",
           blockchain: "BASE",
+          account_type: "SCA",
+          currency: "USDC",
+          passkey_credential: credentialString,
+          circle_wallet_id: walletAddress,
+        },
+        {
+          profile_id: profileData.id,
+          wallet_address: walletAddress,
+          wallet_type: "modular",
+          blockchain: "POLYGON",
           account_type: "SCA",
           currency: "USDC",
           passkey_credential: credentialString,
@@ -174,8 +204,9 @@ export async function POST(req: NextRequest) {
     return new NextResponse(
       JSON.stringify({
         message: "Wallets created successfully",
-        polygonAddress: walletAddress,
+        arcAddress: walletAddress,
         baseAddress: walletAddress,
+        polygonAddress: walletAddress,
         success: true,
         redirectUrl: "/dashboard",
       }),
