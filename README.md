@@ -14,6 +14,11 @@ Seamless, Gasless Transactions with Passkey Security and Instant Top-ups
 4. In Supabase go to Authentication -> Sign In/Up. Under Auth Providers disable Email and enable Phone and set up Twilio Verify settings. Set up a Test Phone Number and OTP.
 5. Create a Stripe account and obtain secret and publishable keys
 6. Go to Circle Modular Wallets Configurator (https://console.circle.com/wallets/modular/configurator) to get Client URL and setup Client Keys (API and Client) and Passkey Domain Name
+   
+   **Passkey Domain Setup:**
+   - In the Circle Console, add your domain: `heysalad.cash` and `www.heysalad.cash`
+   - The project includes the required `.well-known/apple-app-site-association` file for passkey authentication
+   - Ensure your domain is properly configured and pointing to your deployment before testing passkeys
 7. Create a `.env` using `.env.example` as an example and add keys:
 
    ```ini

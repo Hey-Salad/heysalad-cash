@@ -15,7 +15,22 @@ const nextConfig = {
   // Add allowedDevOrigins for your Replit URL - using exact format from documentation
   allowedDevOrigins: [
     '64b3466d-48ab-43ac-94e1-df5a0c65600c-00-3dcvk8y4qe4v6.kirk.replit.dev'
-  ]
+  ],
+
+  // Headers for passkey support
+  async headers() {
+    return [
+      {
+        source: '/.well-known/apple-app-site-association',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/json',
+          },
+        ],
+      },
+    ]
+  },
 };
 
 module.exports = nextConfig;

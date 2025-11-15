@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Tabs } from "@/components/ui/tabs";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server-client";
 import BottomTabNavigation from "@/components/bottom-tab-navigation";
+import Image from "next/image";
 
 interface Props {
   children: ReactNode
@@ -39,6 +40,16 @@ export default async function Layout({ children }: Props) {
 
   return (
     <Tabs className="relative flex flex-col h-full px-5" defaultValue="balance">
+      <div className="flex justify-center py-4">
+        <Image 
+          src="/heysalad-logo-black.png" 
+          alt="HeySalad" 
+          width={150} 
+          height={40}
+          priority
+          className="object-contain"
+        />
+      </div>
       {children}
       <BottomTabNavigation />
     </Tabs>

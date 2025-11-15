@@ -28,6 +28,9 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        figtree: ["var(--font-figtree)"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

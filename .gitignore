@@ -35,3 +35,11 @@ next-env.d.ts
 
 # supabase
 .supabase/
+
+# migration files (already applied to database)
+combined-migrations.sql
+combined-migrations-clean.sql
+
+# scripts with sensitive operations
+scripts/push-migrations.js
+scripts/push-migrations-api.js

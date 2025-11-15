@@ -36,7 +36,9 @@ export default function Layout({
 
   return (
     <GlobalContextProvider>
-      <div className="flex flex-col flex-1 items-center px-5 pb-5 mt-[66px]">{children}</div>
+      <div className="flex flex-col flex-1 items-center px-5 pb-5">
+        {children}
+      </div>
     </GlobalContextProvider>
   );
 }

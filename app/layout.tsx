@@ -1,10 +1,16 @@
 import type { Viewport } from "next";
-import { GeistSans } from "geist/font/sans";
+import { Figtree } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { Web3Provider } from "@/components/web3-provider";
 import { BalanceProvider } from "@/contexts/balanceContext";
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
+});
 
 const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
   ? process.env.NEXT_PUBLIC_VERCEL_URL
@@ -12,7 +18,7 @@ const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "CoinApp",
+  title: "HeySalad ®",
   description: "Seamless, Gasless Transactions with Passkey Security and Instant Top-ups",
 };
 
@@ -26,19 +32,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={GeistSans.className} suppressHydrationWarning>
-      <body className="bg-background/5 text-foreground flex items-center justify-center min-h-svh">
+    <html lang="en" className={figtree.variable} suppressHydrationWarning>
+      <body className="bg-white text-foreground flex items-center justify-center min-h-svh" style={{ fontFamily: 'var(--font-figtree)' }}>
         <Web3Provider>
           <BalanceProvider>
             <ThemeProvider
               attribute="class"
-              defaultTheme="dark"
+              defaultTheme="light"
               enableSystem
               disableTransitionOnChange
             >
               <Toaster expand />
               {/* Phone simulation container */}
-              <div className="w-full max-w-[430px] h-screen max-h-[932px] flex flex-col bg-background shadow-xl overflow-hidden">
+              <div className="w-full max-w-[430px] h-screen max-h-[932px] flex flex-col bg-white shadow-xl overflow-hidden">
                 <main className="flex-1 flex flex-col items-center overflow-auto">
                   <div className="flex flex-col w-full flex-1 pt-2">
                     {children}
