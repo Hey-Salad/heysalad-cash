@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import { useWeb3 } from "@/components/web3-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import StripeOnrampDialog from "@/components/stripe-onramp-dialog";
 import { useBalance } from "@/contexts/balanceContext";
 
 export function WalletBalance() {
   const { activeChain, setActiveChain } = useWeb3();
   const { balances, isRefreshing, refreshBalances } = useBalance();
-  const [onrampDialogOpen, setOnrampDialogOpen] = useState(false);
 
   const handleRefreshBalances = useCallback(async () => {
     try {
@@ -99,7 +97,6 @@ export function WalletBalance() {
         </svg>
         {isRefreshing ? 'Refreshing...' : 'Refresh Balances'}
       </button>
-      <StripeOnrampDialog open={onrampDialogOpen} onOpenChange={setOnrampDialogOpen} />
     </>
   );
 }
