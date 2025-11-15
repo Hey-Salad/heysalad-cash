@@ -147,9 +147,24 @@ export function PasskeySetup({ username }: PasskeySetupProps) {
 
             <Button
                 variant="outline"
-                onClick={() => {
-                    // Force navigation to dashboard
-                    window.location.href = '/dashboard';
+                onClick={async () => {
+                    try {
+                        // Call API to mark setup as skipped
+                        const response = await fetch('/api/skip-passkey', {
+                            method: 'POST',
+                        });
+
+                        if (!response.ok) {
+                            console.error('Failed to skip passkey setup');
+                        }
+
+                        // Force navigation to dashboard
+                        window.location.href = '/dashboard';
+                    } catch (error) {
+                        console.error('Error skipping passkey:', error);
+                        // Navigate anyway
+                        window.location.href = '/dashboard';
+                    }
                 }}
                 disabled={isCreating}
                 className="w-full max-w-xs"
