@@ -60,14 +60,29 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         
-        // Start scanning
-        codeReader.decodeFromVideoElement(videoRef.current, (result) => {
-          if (result) {
-            const scannedText = result.getText();
-            handleScannedQR(scannedText);
-            stopCamera();
+        // Start continuous scanning
+        const scanFromVideo = async () => {
+          if (!videoRef.current || !showCamera) return;
+          
+          try {
+            const result = await codeReader.decodeFromVideoElement(videoRef.current);
+            if (result) {
+              const scannedText = result.getText();
+              handleScannedQR(scannedText);
+              stopCamera();
+            }
+          } catch (error) {
+            // No QR code found yet, keep scanning
+            if (showCamera) {
+              requestAnimationFrame(scanFromVideo);
+            }
           }
-        });
+        };
+        
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          scanFromVideo();
+        };
       }
       
       setScanning(false);
