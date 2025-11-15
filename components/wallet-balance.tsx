@@ -78,7 +78,7 @@ export function WalletBalance() {
       <button
         onClick={handleRefreshBalances}
         disabled={isRefreshing}
-        className={`text-sm ${isRefreshing ? 'text-gray-400' : 'text-blue-500 hover:text-blue-700'} flex items-center gap-1`}
+        className={`text-sm ${isRefreshing ? 'text-gray-400' : 'text-black hover:text-black/70'} flex items-center gap-1`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
