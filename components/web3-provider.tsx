@@ -64,8 +64,8 @@ interface TokenBalances {
 
 interface Web3ContextType {
     accounts: ChainAccounts;
-    activeChain: 'polygon' | 'base';
-    setActiveChain: (chain: 'polygon' | 'base') => void;
+    activeChain: 'arc' | 'base' | 'polygon';
+    setActiveChain: (chain: 'arc' | 'base' | 'polygon') => void;
     isConnected: boolean;
     isInitialized: boolean;
     error: string | null;
@@ -139,7 +139,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         polygon: { smartAccount: null, address: null, bundlerClient: null, publicClient: null },
         base: { smartAccount: null, address: null, bundlerClient: null, publicClient: null },
     });
-    const [activeChain, setActiveChain] = useState<'polygon' | 'base'>('polygon');
+    const [activeChain, setActiveChain] = useState<'arc' | 'base' | 'polygon'>('base');
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
