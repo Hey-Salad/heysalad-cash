@@ -79,6 +79,7 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
       
       setStream(mediaStream);
       setShowCamera(true);
+      setScanning(false);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -89,9 +90,11 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
         // Wait for video to start playing
         await videoRef.current.play();
         
+        toast.success("Camera ready! Point at a QR code to scan.");
+        
         // Start continuous scanning
         const scanFromVideo = async () => {
-          if (!videoRef.current || !stream) return;
+          if (!videoRef.current || !mediaStream) return;
           
           try {
             const result = await codeReader.decodeFromVideoElement(videoRef.current);
@@ -106,7 +109,7 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
           }
           
           // Continue scanning
-          if (stream && videoRef.current) {
+          if (mediaStream && videoRef.current) {
             setTimeout(scanFromVideo, 100); // Scan every 100ms
           }
         };
@@ -114,9 +117,6 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
         // Start scanning after a short delay
         setTimeout(scanFromVideo, 500);
       }
-      
-      setScanning(false);
-      toast.success("Camera ready! Point at a QR code to scan.");
     } catch (error: any) {
       console.error("Error accessing camera:", error);
       
