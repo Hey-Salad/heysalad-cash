@@ -33,7 +33,15 @@ export function WalletBalance() {
     }
 
     // Make sure we have a valid number
-    const formattedBalance = (isNaN(value) || value === 0) ? "0" : value.toFixed(2);
+    // Show more decimals for small amounts
+    let formattedBalance: string;
+    if (isNaN(value) || value === 0) {
+      formattedBalance = "0";
+    } else if (value < 0.01) {
+      formattedBalance = value.toFixed(6); // Show 6 decimals for very small amounts
+    } else {
+      formattedBalance = value.toFixed(2);
+    }
 
     return `${formattedBalance} USDC`;
   };

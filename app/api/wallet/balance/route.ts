@@ -69,6 +69,7 @@ export async function POST(
 
     try {
       // Use the blockchain + address endpoint to get balances
+      console.log(`Fetching balance for ${blockchain}/${walletAddress}`);
       const balanceResponse = await axios.get(
         `https://api.circle.com/v1/w3s/buidl/wallets/${blockchain}/${walletAddress}/balances`,
         {
@@ -80,12 +81,16 @@ export async function POST(
         },
       );
 
+      console.log("Circle API response:", JSON.stringify(balanceResponse.data, null, 2));
+
       // FIXED: Extract from data.tokenBalances instead of tokenBalances
       // The Circle API wraps the response in a data object
       const usdcBalance =
         balanceResponse.data?.data?.tokenBalances?.find(
           (balance: any) => balance.token?.symbol === "USDC",
         )?.amount || "0";
+
+      console.log(`USDC balance found: ${usdcBalance}`);
 
       // Update wallet balance in database
       await supabase
