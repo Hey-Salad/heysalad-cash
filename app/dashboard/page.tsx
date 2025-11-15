@@ -6,6 +6,7 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/server-clien
 const BalanceTab = dynamic(() => import("@/components/balance-tab"), { ssr: true });
 const WalletTab = dynamic(() => import("@/components/wallet-tab"), { ssr: true });
 const TransactionsTab = dynamic(() => import("@/components/transactions-tab"), { ssr: true });
+const SettingsPage = dynamic(() => import("@/app/dashboard/settings/page"), { ssr: true });
 
 export default async function Dashboard() {
   const supabase = await createSupabaseServerComponentClient();
@@ -93,6 +94,9 @@ export default async function Dashboard() {
       </TabsContent>
       <TabsContent value="transactions">
         <TransactionsTab primaryWallet={primaryWallet} profile={profile} />
+      </TabsContent>
+      <TabsContent value="settings">
+        <SettingsPage />
       </TabsContent>
     </>
   );

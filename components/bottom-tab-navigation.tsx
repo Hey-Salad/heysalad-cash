@@ -2,7 +2,7 @@
 import { type MouseEventHandler, useEffect, useMemo, useState } from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "@supabase/supabase-js";
-import { History, Wallet } from "lucide-react";
+import { History, Wallet, Settings } from "lucide-react";
 import { createClient } from "@/lib/utils/supabase/client";
 import millify from "millify";
 import { useWeb3 } from "@/components/web3-provider";
@@ -71,7 +71,7 @@ export default function BottomTabNavigation() {
   if (!user?.user_metadata.wallet_setup_complete) return null;
 
   return (
-    <TabsList className="absolute bottom-0 left-0 grid w-full grid-cols-3 h-auto p-2">
+    <TabsList className="absolute bottom-0 left-0 grid w-full grid-cols-4 h-auto p-2">
       <TabsTrigger onClick={handleTabChange} value="balance">
         <p className="text-lg">${formattedWalletBalance}</p>
       </TabsTrigger>
@@ -80,6 +80,9 @@ export default function BottomTabNavigation() {
       </TabsTrigger>
       <TabsTrigger value="transactions">
         <History />
+      </TabsTrigger>
+      <TabsTrigger value="settings">
+        <Settings />
       </TabsTrigger>
     </TabsList>
   );

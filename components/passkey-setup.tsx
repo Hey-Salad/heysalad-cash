@@ -20,10 +20,11 @@ import {
 
 interface PasskeySetupProps {
     username: string;
+    isUpdate?: boolean;
 }
 
 // This component handles the wallet setup after user registration
-export function PasskeySetup({ username }: PasskeySetupProps) {
+export function PasskeySetup({ username, isUpdate = false }: PasskeySetupProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -113,8 +114,12 @@ export function PasskeySetup({ username }: PasskeySetupProps) {
                 console.warn("Could not parse response JSON", e);
             }
 
-            // Force redirect to dashboard
-            window.location.href = '/dashboard';
+            // If updating, just reload the page, otherwise redirect to dashboard
+            if (isUpdate) {
+                window.location.reload();
+            } else {
+                window.location.href = '/dashboard';
+            }
         } catch (err) {
             console.error("Passkey creation failed:", err);
             setError(err instanceof Error ? err.message : 'Failed to create passkey');
@@ -125,11 +130,15 @@ export function PasskeySetup({ username }: PasskeySetupProps) {
 
     return (
         <div className="flex flex-col items-center justify-center gap-4 p-6">
-            <h2 className="text-xl font-semibold">Set Up Your Wallet with Passkey</h2>
-            <p className="text-muted-foreground text-center max-w-md">
-                Set up your wallet using a passkey for enhanced security.
-                This allows you to sign transactions with biometric authentication.
-            </p>
+            {!isUpdate && (
+                <>
+                    <h2 className="text-xl font-semibold">Set Up Your Wallet with Passkey</h2>
+                    <p className="text-muted-foreground text-center max-w-md">
+                        Set up your wallet using a passkey for enhanced security.
+                        This allows you to sign transactions with biometric authentication.
+                    </p>
+                </>
+            )}
 
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -140,37 +149,39 @@ export function PasskeySetup({ username }: PasskeySetupProps) {
             <Button
                 onClick={setupPasskey}
                 disabled={isCreating}
-                className="w-full max-w-xs"
+                className="w-full max-w-xs bg-black hover:bg-black/90 text-white"
             >
-                {isCreating ? 'Setting up passkey...' : 'Set up with passkey'}
+                {isCreating ? 'Setting up passkey...' : isUpdate ? 'Update Passkey' : 'Set up with passkey'}
             </Button>
 
-            <Button
-                variant="outline"
-                onClick={async () => {
-                    try {
-                        // Call API to mark setup as skipped
-                        const response = await fetch('/api/skip-passkey', {
-                            method: 'POST',
-                        });
+            {!isUpdate && (
+                <Button
+                    variant="outline"
+                    onClick={async () => {
+                        try {
+                            // Call API to mark setup as skipped
+                            const response = await fetch('/api/skip-passkey', {
+                                method: 'POST',
+                            });
 
-                        if (!response.ok) {
-                            console.error('Failed to skip passkey setup');
+                            if (!response.ok) {
+                                console.error('Failed to skip passkey setup');
+                            }
+
+                            // Force navigation to dashboard
+                            window.location.href = '/dashboard';
+                        } catch (error) {
+                            console.error('Error skipping passkey:', error);
+                            // Navigate anyway
+                            window.location.href = '/dashboard';
                         }
-
-                        // Force navigation to dashboard
-                        window.location.href = '/dashboard';
-                    } catch (error) {
-                        console.error('Error skipping passkey:', error);
-                        // Navigate anyway
-                        window.location.href = '/dashboard';
-                    }
-                }}
-                disabled={isCreating}
-                className="w-full max-w-xs"
-            >
-                Skip for now
-            </Button>
+                    }}
+                    disabled={isCreating}
+                    className="w-full max-w-xs"
+                >
+                    Skip for now
+                </Button>
+            )}
         </div>
     );
 }
