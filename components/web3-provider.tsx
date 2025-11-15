@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { polygon, base, Chain } from 'viem/chains';
-import { createPublicClient } from 'viem';
+import { createPublicClient, http } from 'viem';
 import {
     type P256Credential,
     type SmartAccount,
@@ -213,17 +213,22 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
                 const config = chainConfigs[chainType];
 
-                // Create modular transport for the chain
+                // Get RPC URL from environment
+                const rpcUrl = chainType === 'polygon' 
+                    ? process.env.NEXT_PUBLIC_POLYGON_RPC_URL 
+                    : process.env.NEXT_PUBLIC_BASE_RPC_URL;
+
+                // Create public client with RPC transport (for reading blockchain data)
+                const publicClient = createPublicClient({
+                    chain: config.chain,
+                    transport: rpcUrl ? http(rpcUrl) : http(),
+                });
+
+                // Create modular transport for the chain (for Circle smart account operations)
                 const modularTransport = toModularTransport(
                     `${clientUrl}${config.networkPath}`,
                     clientKey
                 );
-
-                // Create public client
-                const publicClient = createPublicClient({
-                    chain: config.chain,
-                    transport: modularTransport,
-                });
 
                 // Create WebAuthn account
                 const webAuthnAccount = toWebAuthnAccount({
