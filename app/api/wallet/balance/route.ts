@@ -107,8 +107,8 @@ export async function POST(
         // If the first blockchain fails, try the alternate blockchain
         // This handles wallets that might be on a different network than expected
         const alternateBlockchain = blockchain.includes("MATIC")
-          ? "BASE-SEPOLIA" // Try Base if Polygon fails
-          : "MATIC-AMOY"; // Try Polygon if Base fails
+          ? "BASE-MAINNET" // Try Base if Polygon fails
+          : "MATIC-MAINNET"; // Try Polygon if Base fails
 
         try {
           const retryResponse = await axios.get(
@@ -171,11 +171,11 @@ function determineBlockchain(networkName: string): string {
   const normalizedNetwork = networkName.toLowerCase();
 
   if (normalizedNetwork.includes("polygon")) {
-    return "MATIC-AMOY"; // Polygon testnet
+    return "MATIC-MAINNET"; // Polygon mainnet
   }
   if (normalizedNetwork.includes("base")) {
-    return "BASE-SEPOLIA"; // Base testnet
+    return "BASE-MAINNET"; // Base mainnet
   }
-  // Default to Polygon if no match found
-  return "MATIC-AMOY";
+  // Default to Polygon mainnet if no match found
+  return "MATIC-MAINNET";
 }
