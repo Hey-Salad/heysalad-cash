@@ -16,7 +16,8 @@ export function MoonPayButton({ className }: MoonPayButtonProps) {
     setLoading(true);
 
     try {
-      const walletAddress = accounts[activeChain].address;
+      const activeAccount = accounts[activeChain];
+      const walletAddress = activeAccount?.address;
       
       if (!walletAddress) {
         alert('Please connect your wallet first');
@@ -24,7 +25,7 @@ export function MoonPayButton({ className }: MoonPayButtonProps) {
       }
 
       // Get the currency code based on active chain
-      const currencyCode = activeChain === 'polygon' ? 'usdc_polygon' : 'usdc_base';
+      const currencyCode = activeChain === 'arc' ? 'usdc' : activeChain === 'polygon' ? 'usdc_polygon' : 'usdc_base';
 
       // Build MoonPay widget URL
       const moonpayUrl = new URL('https://buy.moonpay.com');
@@ -57,7 +58,7 @@ export function MoonPayButton({ className }: MoonPayButtonProps) {
   return (
     <Button
       onClick={handleBuyClick}
-      disabled={loading || !accounts[activeChain].address}
+      disabled={loading || !accounts[activeChain]?.address}
       className={className}
     >
       {loading ? 'Opening...' : 'Buy USDC'}
