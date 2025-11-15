@@ -26,13 +26,15 @@ export default async function SettingsPage() {
     return redirect("/sign-in");
   }
 
-  // Check if user has passkey credentials
-  const { data: credentials } = await supabase
-    .from("passkey_credentials")
-    .select()
-    .eq("profile_id", profile.id);
+  // Check if user has passkey credentials in wallets table
+  const { data: wallets } = await supabase
+    .from("wallets")
+    .select("passkey_credential")
+    .eq("profile_id", profile.id)
+    .not("passkey_credential", "is", null)
+    .limit(1);
 
-  const hasPasskey = credentials && credentials.length > 0 && credentials[0]?.passkey_credential;
+  const hasPasskey = wallets && wallets.length > 0 && wallets[0]?.passkey_credential;
 
   return (
     <div className="flex flex-col gap-4 pb-20">
