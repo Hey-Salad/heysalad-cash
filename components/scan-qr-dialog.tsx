@@ -15,6 +15,7 @@ import { Camera, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { BrowserMultiFormatReader } from "@zxing/library";
 
 interface ScanQRDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const router = useRouter();
 
   // Cleanup camera stream when dialog closes
@@ -37,11 +39,18 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
       setShowCamera(false);
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+      }
     }
   }, [open, stream]);
 
   const startCamera = async () => {
     try {
+      setScanning(true);
+      const codeReader = new BrowserMultiFormatReader();
+      codeReaderRef.current = codeReader;
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" } // Use back camera on mobile
       });
@@ -50,12 +59,23 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        
+        // Start scanning
+        codeReader.decodeFromVideoElement(videoRef.current, (result, error) => {
+          if (result) {
+            const scannedText = result.getText();
+            handleScannedQR(scannedText);
+            stopCamera();
+          }
+        });
       }
       
-      toast.info("Camera ready! QR scanning coming soon. Please use upload or manual entry.");
+      setScanning(false);
+      toast.success("Camera ready! Point at a QR code to scan.");
     } catch (error) {
       console.error("Error accessing camera:", error);
       toast.error("Could not access camera. Please use upload instead.");
+      setScanning(false);
     }
   };
 
@@ -64,7 +84,38 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+    }
     setShowCamera(false);
+  };
+
+  const handleScannedQR = (scannedText: string) => {
+    // Parse QR code data
+    // Could be: plain address, or ethereum:address?amount=X format
+    try {
+      if (scannedText.includes(':')) {
+        // Parse URI format (e.g., ethereum:0x123?amount=10)
+        const [, addressPart] = scannedText.split(':');
+        const [addr, params] = addressPart.split('?');
+        setAddress(addr);
+        
+        if (params) {
+          const urlParams = new URLSearchParams(params);
+          const amt = urlParams.get('amount');
+          if (amt) setAmount(amt);
+        }
+      } else {
+        // Plain address
+        setAddress(scannedText);
+      }
+      
+      toast.success("QR code scanned successfully!");
+    } catch (error) {
+      console.error("Error parsing QR code:", error);
+      setAddress(scannedText); // Fallback to raw text
+      toast.success("QR code scanned!");
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,12 +124,18 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
 
     setScanning(true);
     try {
-      // For now, show a message. In production, use jsQR library
-      toast.info("QR code scanning coming soon! Please enter address manually.");
-      setScanning(false);
+      const codeReader = new BrowserMultiFormatReader();
+      const imageUrl = URL.createObjectURL(file);
+      
+      const result = await codeReader.decodeFromImageUrl(imageUrl);
+      const scannedText = result.getText();
+      
+      handleScannedQR(scannedText);
+      URL.revokeObjectURL(imageUrl);
     } catch (error) {
       console.error("Error scanning QR code:", error);
-      toast.error("Failed to scan QR code");
+      toast.error("Could not read QR code from image. Please try again or enter manually.");
+    } finally {
       setScanning(false);
     }
   };
