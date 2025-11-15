@@ -37,30 +37,29 @@ export async function POST(req: NextRequest) {
     // Handle the event
     console.log(`Received Stripe event: ${event.type}`);
 
-    switch (event.type) {
-      case "crypto_onramp_session.completed":
-        // Handle successful crypto onramp
-        const session = event.data.object;
-        console.log("Crypto onramp completed:", session.id);
-        // TODO: Update user balance or trigger notification
-        break;
-
-      case "crypto_onramp_session.failed":
-        // Handle failed crypto onramp
-        const failedSession = event.data.object;
-        console.log("Crypto onramp failed:", failedSession.id);
-        // TODO: Notify user of failure
-        break;
-
-      case "crypto_onramp_session.updated":
-        // Handle onramp session updates
-        const updatedSession = event.data.object;
-        console.log("Crypto onramp updated:", updatedSession.id);
-        break;
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+    // Handle crypto onramp events (not in Stripe types yet)
+    if (event.type === "crypto_onramp_session.completed") {
+      const session = event.data.object;
+      console.log("Crypto onramp completed:", session);
+      // TODO: Update user balance or trigger notification
+      return NextResponse.json({ received: true });
     }
+
+    if (event.type === "crypto_onramp_session.failed") {
+      const failedSession = event.data.object;
+      console.log("Crypto onramp failed:", failedSession);
+      // TODO: Notify user of failure
+      return NextResponse.json({ received: true });
+    }
+
+    if (event.type === "crypto_onramp_session.updated") {
+      const updatedSession = event.data.object;
+      console.log("Crypto onramp updated:", updatedSession);
+      return NextResponse.json({ received: true });
+    }
+
+    // Handle other event types
+    console.log(`Unhandled event type: ${event.type}`);
 
     return NextResponse.json({ received: true });
   } catch (error) {
