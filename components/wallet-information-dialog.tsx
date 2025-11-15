@@ -30,15 +30,15 @@ export function WalletInformationDialog({ wallets }: WalletInformationDialogProp
 
   // Chain display names and info
   const chainNames: Record<string, string> = {
-    arc: 'Arc Testnet',
-    base: 'Base Sepolia',
-    polygon: 'Polygon Amoy'
+    arc: 'Arc Mainnet',
+    base: 'Base Mainnet',
+    polygon: 'Polygon Mainnet'
   };
 
   const chainDescriptions: Record<string, string> = {
-    arc: 'Circle\'s L1 blockchain • Test network for development',
-    base: 'Base testnet • Safe testing environment',
-    polygon: 'Polygon testnet • Development network'
+    arc: 'Circle\'s L1 blockchain • USDC as gas • Sub-second finality',
+    base: 'Coinbase L2 • Low fees • Fast transactions',
+    polygon: 'Established network • Wide adoption • Low cost'
   };
 
   const copyAddress = (address: string) => {

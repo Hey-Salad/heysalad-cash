@@ -7,22 +7,22 @@ export function ActiveChainBadge() {
 
   const chainConfig = {
     arc: {
-      name: "Arc Testnet",
+      name: "Arc Mainnet",
       color: "from-blue-500 to-purple-500",
       dotColor: "bg-gradient-to-r from-blue-500 to-purple-500",
-      description: "Test network • Safe for development",
+      description: "USDC as Gas • Sub-second finality",
     },
     base: {
-      name: "Base Sepolia",
+      name: "Base Mainnet",
       color: "from-blue-600 to-blue-400",
       dotColor: "bg-blue-500",
-      description: "Base testnet • Development mode",
+      description: "Coinbase L2 • Low fees",
     },
     polygon: {
-      name: "Polygon Amoy",
+      name: "Polygon Mainnet",
       color: "from-purple-600 to-purple-400",
       dotColor: "bg-purple-500",
-      description: "Polygon testnet • Testing environment",
+      description: "Established network • Wide adoption",
     },
   };
 
