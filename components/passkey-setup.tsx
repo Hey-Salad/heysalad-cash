@@ -8,7 +8,7 @@ import {
 } from '@circle-fin/modular-wallets-core';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
-import { polygonAmoy } from 'viem/chains';
+import { polygon } from 'viem/chains';
 import { createPublicClient } from 'viem';
 import {
     toWebAuthnAccount,
@@ -64,13 +64,13 @@ export function PasskeySetup({ username, isUpdate = false }: PasskeySetupProps) 
 
                 // Create modular transport for Polygon
                 const modularTransport = toModularTransport(
-                    `${clientUrl}/polygonAmoy`,
+                    `${clientUrl}/polygon`,
                     clientKey
                 );
 
                 // Create public client
                 const publicClient = createPublicClient({
-                    chain: polygonAmoy,
+                    chain: polygon,
                     transport: modularTransport,
                 });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { polygonAmoy, baseSepolia, Chain } from 'viem/chains';
+import { polygon, base, Chain } from 'viem/chains';
 import { createPublicClient } from 'viem';
 import {
     type P256Credential,
@@ -20,8 +20,8 @@ import {
 
 // Token addresses for USDC on each network
 const USDC_ADDRESSES = {
-    polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // USDC on Polygon Amoy
-    base: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC on Base Sepolia
+    polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // USDC on Polygon Mainnet
+    base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base Mainnet
 };
 
 // USDC decimals - typically 6 for USDC
@@ -84,12 +84,12 @@ interface Web3ContextType {
 // Chain configurations
 const chainConfigs = {
     polygon: {
-        chain: polygonAmoy,
-        networkPath: '/polygonAmoy',
+        chain: polygon,
+        networkPath: '/polygon',
     },
     base: {
-        chain: baseSepolia,
-        networkPath: '/baseSepolia',
+        chain: base,
+        networkPath: '/base',
     }
 };
 
