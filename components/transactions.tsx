@@ -66,18 +66,21 @@ async function syncTransactions(
   supabase: SupabaseClient,
   walletId: string,
   profileId: string,
-  circleWalletId: string
+  walletAddress: string
 ) {
   try {
     // Skip API calls for placeholder wallets
-    if (!circleWalletId || 
-        circleWalletId === "skipped-setup" || 
-        circleWalletId === "pending-setup" ||
-        circleWalletId === "incomplete-setup" ||
-        circleWalletId === "0x0000000000000000000000000000000000000000") {
+    if (!walletAddress || 
+        walletAddress === "skipped-setup" || 
+        walletAddress === "pending-setup" ||
+        walletAddress === "incomplete-setup" ||
+        walletAddress === "0x0" ||
+        walletAddress === "0x0000000000000000000000000000000000000000") {
       console.log("Skipping transaction sync for placeholder wallet");
       return [];
     }
+
+    console.log(`Fetching transactions for wallet address: ${walletAddress}`);
 
     // Check for both networks - first Polygon
     const polygonResponse = await fetch(
@@ -85,7 +88,7 @@ async function syncTransactions(
       {
         method: "POST",
         body: JSON.stringify({
-          walletId: circleWalletId,
+          walletId: walletAddress,
           networkId: polygon.id,
           pageSize: 50 // Get maximum number of transactions
         }),
@@ -101,7 +104,7 @@ async function syncTransactions(
       {
         method: "POST",
         body: JSON.stringify({
-          walletId: circleWalletId,
+          walletId: walletAddress,
           networkId: base.id,
           pageSize: 50
         }),
@@ -188,8 +191,8 @@ async function syncTransactions(
         const fromAddress = tx.from || tx.fromAddress || "";
 
         // Only compare if both values exist and are not empty
-        const isReceived = toAddress && circleWalletId ?
-          toAddress.toLowerCase() === circleWalletId.toLowerCase() :
+        const isReceived = toAddress && walletAddress ?
+          toAddress.toLowerCase() === walletAddress.toLowerCase() :
           false;
 
         const transactionType = isReceived ? "USDC_TRANSFER" : "OUTBOUND";
@@ -357,7 +360,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
       setRefreshing(true);
       setError(null);
 
-      if (!props.wallet?.id || !props.profile?.id || !props.wallet?.circle_wallet_id) {
+      if (!props.wallet?.id || !props.profile?.id || !props.wallet?.wallet_address) {
         setError("Missing wallet or profile information");
         return;
       }
@@ -367,7 +370,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
         supabase,
         props.wallet.id,
         props.profile.id,
-        props.wallet.circle_wallet_id
+        props.wallet.wallet_address
       );
 
       setData(transactions);
@@ -412,7 +415,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
     return () => {
       supabase.removeChannel(transactionSubscription);
     };
-  }, [props.wallet?.id, props.profile?.id, props.wallet?.circle_wallet_id]);
+  }, [props.wallet?.id, props.profile?.id, props.wallet?.wallet_address]);
 
   if (loading) {
     return <Skeleton className="w-full h-[30px] rounded-md" />;
