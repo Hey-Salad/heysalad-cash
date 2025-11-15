@@ -61,7 +61,7 @@ export function ScanQRDialog({ open, onOpenChange }: ScanQRDialogProps) {
         videoRef.current.srcObject = mediaStream;
         
         // Start scanning
-        codeReader.decodeFromVideoElement(videoRef.current, (result, error) => {
+        codeReader.decodeFromVideoElement(videoRef.current, (result) => {
           if (result) {
             const scannedText = result.getText();
             handleScannedQR(scannedText);
