@@ -28,11 +28,17 @@ export function WalletInformationDialog({ wallets }: WalletInformationDialogProp
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState(wallets[0]?.chain || "polygon");
 
-  // Chain display names
+  // Chain display names and info
   const chainNames: Record<string, string> = {
     arc: 'Arc Mainnet',
     base: 'Base Mainnet',
     polygon: 'Polygon Mainnet'
+  };
+
+  const chainDescriptions: Record<string, string> = {
+    arc: 'Circle\'s L1 blockchain • USDC as gas • Sub-second finality',
+    base: 'Coinbase L2 • Low fees • Fast transactions',
+    polygon: 'Established network • Wide adoption • Low cost'
   };
 
   const copyAddress = (address: string) => {
@@ -109,10 +115,18 @@ export function WalletInformationDialog({ wallets }: WalletInformationDialogProp
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium mb-1">Blockchain</div>
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="text-sm">
+                  <div className="text-sm font-medium mb-1">Network</div>
+                  <div className="bg-muted p-3 rounded-md space-y-1">
+                    <div className="text-sm font-semibold flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        wallet.chain === 'arc' ? 'bg-gradient-to-r from-blue-500 to-purple-500' :
+                        wallet.chain === 'polygon' ? 'bg-purple-500' : 
+                        'bg-blue-500'
+                      }`}></div>
                       {chainNames[wallet.chain] || wallet.blockchain}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {chainDescriptions[wallet.chain] || 'Blockchain network'}
                     </div>
                   </div>
                 </div>

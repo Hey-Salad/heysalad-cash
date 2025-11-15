@@ -69,19 +69,31 @@ export function WalletBalance() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="arc" className="mt-4">
+        <TabsContent value="arc" className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+            <span>Arc Mainnet • USDC as Gas</span>
+          </div>
           <div className="text-3xl font-bold">
             {formatBalance({ value: balances.arc?.token || 0, loading: balances.arc?.loading || false })}
           </div>
         </TabsContent>
 
-        <TabsContent value="base" className="mt-4">
+        <TabsContent value="base" className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span>Base Mainnet • Coinbase L2</span>
+          </div>
           <div className="text-3xl font-bold">
             {formatBalance({ value: balances.base.token, loading: balances.base.loading })}
           </div>
         </TabsContent>
 
-        <TabsContent value="polygon" className="mt-4">
+        <TabsContent value="polygon" className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+            <span>Polygon Mainnet • Low Fees</span>
+          </div>
           <div className="text-3xl font-bold">
             {formatBalance({ value: balances.polygon.token, loading: balances.polygon.loading })}
           </div>

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WalletInformationDialog } from "@/components/wallet-information-dialog";
 import { WalletBalance } from "@/components/wallet-balance";
 import { WalletActions } from "@/components/wallet-actions";
+import { ActiveChainBadge } from "@/components/active-chain-badge";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/actions";
@@ -41,6 +42,8 @@ export default async function BalanceTab({ walletModels }: Props) {
             />
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {/* Active Chain Indicator */}
+            <ActiveChainBadge />
             <WalletBalance />
             <WalletActions />
           </CardContent>
