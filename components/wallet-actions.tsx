@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { QrCode, Scan, Plus, ShoppingCart } from "lucide-react";
+import { QrCode, Scan, Plus } from "lucide-react";
 import { ReceiveQRDialog } from "@/components/receive-qr-dialog";
 import { ScanQRDialog } from "@/components/scan-qr-dialog";
-import { MoonPayButton } from "@/components/moonpay-button";
-import StripeOnrampDialog from "@/components/stripe-onramp-dialog";
+import { PaymentProviderDialog } from "@/components/payment-provider-dialog";
 
 export function WalletActions() {
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
-  const [stripeDialogOpen, setStripeDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   return (
     <>
@@ -39,7 +38,7 @@ export function WalletActions() {
 
         {/* Bottom Row: Single Add USDC button */}
         <Button
-          onClick={() => setStripeDialogOpen(true)}
+          onClick={() => setPaymentDialogOpen(true)}
           className="flex items-center gap-2 h-12 bg-black text-white hover:bg-black/90 w-full"
         >
           <Plus className="w-5 h-5" />
@@ -50,7 +49,7 @@ export function WalletActions() {
       {/* Dialogs */}
       <ReceiveQRDialog open={receiveDialogOpen} onOpenChange={setReceiveDialogOpen} />
       <ScanQRDialog open={scanDialogOpen} onOpenChange={setScanDialogOpen} />
-      <StripeOnrampDialog open={stripeDialogOpen} onOpenChange={setStripeDialogOpen} />
+      <PaymentProviderDialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen} />
     </>
   );
 }
