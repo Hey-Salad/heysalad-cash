@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWeb3 } from "@/components/web3-provider";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface ReceiveQRDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface ReceiveQRDialogProps {
 export function ReceiveQRDialog({ open, onOpenChange }: ReceiveQRDialogProps) {
   const { accounts, activeChain } = useWeb3();
   const [copied, setCopied] = useState(false);
+  const [qrLoaded, setQrLoaded] = useState(false);
   const walletAddress = accounts[activeChain]?.address || "";
 
   const copyAddress = async () => {
@@ -34,13 +36,32 @@ export function ReceiveQRDialog({ open, onOpenChange }: ReceiveQRDialogProps) {
     }
   };
 
-  // Generate QR code URL using a QR code API
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(walletAddress)}`;
+  // Generate QR code URL - optimized with smaller size and faster API
+  const qrCodeUrl = walletAddress 
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=256x256&margin=10&data=${encodeURIComponent(walletAddress)}`
+    : "";
+
+  // Reset QR loaded state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setQrLoaded(false);
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          {/* HeySalad Logo */}
+          <div className="flex justify-center mb-2">
+            <Image
+              src="/heysalad-logo-black.png"
+              alt="HeySalad"
+              width={120}
+              height={40}
+              className="h-8 w-auto"
+            />
+          </div>
           <DialogTitle className="text-center text-2xl">Receive USDC</DialogTitle>
           <DialogDescription className="text-center">
             Scan this QR code or share your wallet address
@@ -49,13 +70,25 @@ export function ReceiveQRDialog({ open, onOpenChange }: ReceiveQRDialogProps) {
 
         <div className="flex flex-col items-center gap-6 py-4">
           {/* QR Code */}
-          <div className="bg-white p-4 rounded-lg border-2 border-black">
+          <div className="bg-white p-4 rounded-lg border-2 border-black relative">
             {walletAddress ? (
-              <img
-                src={qrCodeUrl}
-                alt="Wallet QR Code"
-                className="w-64 h-64"
-              />
+              <>
+                {!qrLoaded && (
+                  <div className="w-64 h-64 flex items-center justify-center bg-gray-100 rounded animate-pulse">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading QR...</p>
+                    </div>
+                  </div>
+                )}
+                <img
+                  src={qrCodeUrl}
+                  alt="Wallet QR Code"
+                  className={`w-64 h-64 ${qrLoaded ? 'block' : 'hidden'}`}
+                  onLoad={() => setQrLoaded(true)}
+                  loading="eager"
+                />
+              </>
             ) : (
               <div className="w-64 h-64 flex items-center justify-center bg-gray-100 rounded">
                 <p className="text-gray-500">No wallet address</p>

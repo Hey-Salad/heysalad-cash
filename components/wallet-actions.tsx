@@ -15,38 +15,36 @@ export function WalletActions() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 w-full">
-        {/* Receive with QR Code */}
-        <Button
-          onClick={() => setReceiveDialogOpen(true)}
-          variant="outline"
-          className="flex items-center gap-2 h-12 border-2 border-black hover:bg-black hover:text-white transition-colors"
-        >
-          <QrCode className="w-5 h-5" />
-          <span className="font-semibold">Receive</span>
-        </Button>
+      <div className="flex flex-col gap-3 w-full">
+        {/* Top Row: Receive and Scan */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={() => setReceiveDialogOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2 h-12 border-2 border-black hover:bg-black hover:text-white transition-colors"
+          >
+            <QrCode className="w-5 h-5" />
+            <span className="font-semibold">Receive</span>
+          </Button>
 
-        {/* Scan QR Code */}
-        <Button
-          onClick={() => setScanDialogOpen(true)}
-          variant="outline"
-          className="flex items-center gap-2 h-12 border-2 border-black hover:bg-black hover:text-white transition-colors"
-        >
-          <Scan className="w-5 h-5" />
-          <span className="font-semibold">Scan</span>
-        </Button>
+          <Button
+            onClick={() => setScanDialogOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2 h-12 border-2 border-black hover:bg-black hover:text-white transition-colors"
+          >
+            <Scan className="w-5 h-5" />
+            <span className="font-semibold">Scan</span>
+          </Button>
+        </div>
 
-        {/* Add USDC (Stripe) */}
+        {/* Bottom Row: Single Add USDC button */}
         <Button
           onClick={() => setStripeDialogOpen(true)}
-          className="flex items-center gap-2 h-12 bg-black text-white hover:bg-black/90"
+          className="flex items-center gap-2 h-12 bg-black text-white hover:bg-black/90 w-full"
         >
           <Plus className="w-5 h-5" />
           <span className="font-semibold">Add USDC</span>
         </Button>
-
-        {/* Buy USDC (MoonPay) - Hidden by default */}
-        <MoonPayButton className="hidden" />
       </div>
 
       {/* Dialogs */}
