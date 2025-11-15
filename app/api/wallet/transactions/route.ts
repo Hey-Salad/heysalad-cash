@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { polygonAmoy, baseSepolia } from "viem/chains";
+import { polygon, base } from "viem/chains";
 
 // Schema for validating request parameters
 const WalletIdSchema = z.object({
   walletId: z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
     message: "Invalid Ethereum wallet address format",
   }),
-  networkId: z.number().optional().default(polygonAmoy.id),
+  networkId: z.number().optional().default(polygon.id),
   pageSize: z.number().optional().default(50), // Maximum size for Circle API
   pageAfter: z.string().optional(),
   pageBefore: z.string().optional(),
@@ -15,16 +15,16 @@ const WalletIdSchema = z.object({
   to: z.string().optional(), // ISO date format
 });
 
-// Map our network IDs to Circle's blockchain names
+// Map our network IDs to Circle's blockchain names (mainnet)
 const NETWORK_TO_BLOCKCHAIN: { [key: number]: string } = {
-  [polygonAmoy.id]: "MATIC-AMOY",
-  [baseSepolia.id]: "BASE-SEPOLIA",
+  [polygon.id]: "MATIC",
+  [base.id]: "BASE",
 };
 
 // Network names for display
 const NETWORK_NAMES: { [key: number]: string } = {
-  [polygonAmoy.id]: "Polygon Amoy",
-  [baseSepolia.id]: "Base Sepolia",
+  [polygon.id]: "Polygon",
+  [base.id]: "Base",
 };
 
 export async function POST(req: NextRequest) {

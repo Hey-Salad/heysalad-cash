@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, type FunctionComponent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { Badge } from "@/components/ui/badge";
-import { polygonAmoy, baseSepolia } from 'viem/chains';
+import { polygon, base } from 'viem/chains';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 
@@ -58,8 +58,8 @@ interface Props {
 }
 
 const NETWORK_COLORS: Record<number, string> = {
-  [polygonAmoy.id]: "bg-purple-100",
-  [baseSepolia.id]: "bg-blue-100",
+  [polygon.id]: "bg-purple-100",
+  [base.id]: "bg-blue-100",
 };
 
 async function syncTransactions(
@@ -79,14 +79,14 @@ async function syncTransactions(
       return [];
     }
 
-    // Check for both networks - first Polygon Amoy
+    // Check for both networks - first Polygon
     const polygonResponse = await fetch(
       `${baseUrl}/api/wallet/transactions`,
       {
         method: "POST",
         body: JSON.stringify({
           walletId: circleWalletId,
-          networkId: polygonAmoy.id,
+          networkId: polygon.id,
           pageSize: 50 // Get maximum number of transactions
         }),
         headers: {
@@ -95,14 +95,14 @@ async function syncTransactions(
       }
     );
 
-    // Then Base Sepolia
+    // Then Base
     const baseResponse = await fetch(
       `${baseUrl}/api/wallet/transactions`,
       {
         method: "POST",
         body: JSON.stringify({
           walletId: circleWalletId,
-          networkId: baseSepolia.id,
+          networkId: base.id,
           pageSize: 50
         }),
         headers: {
@@ -288,7 +288,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
     if (activeNetworkFilter === null) return formattedData;
     return formattedData.filter(tx =>
       tx.network_id === activeNetworkFilter ||
-      (activeNetworkFilter === polygonAmoy.id && !tx.network_id))
+      (activeNetworkFilter === polygon.id && !tx.network_id))
   }, [formattedData, activeNetworkFilter]);
 
   const searchedData = useMemo(() => {
@@ -444,16 +444,16 @@ export const Transactions: FunctionComponent<Props> = (props) => {
           />
           <div className="flex gap-2">
             <Badge
-              className={`cursor-pointer ${activeNetworkFilter === polygonAmoy.id ? NETWORK_COLORS[polygonAmoy.id] : 'bg-gray-100 text-gray-800'}`}
-              onClick={() => toggleNetworkFilter(polygonAmoy.id)}
+              className={`cursor-pointer ${activeNetworkFilter === polygon.id ? NETWORK_COLORS[polygon.id] : 'bg-gray-100 text-gray-800'}`}
+              onClick={() => toggleNetworkFilter(polygon.id)}
             >
-              Polygon Amoy
+              Polygon
             </Badge>
             <Badge
-              className={`cursor-pointer ${activeNetworkFilter === baseSepolia.id ? NETWORK_COLORS[baseSepolia.id] : 'bg-gray-100 text-gray-800'}`}
-              onClick={() => toggleNetworkFilter(baseSepolia.id)}
+              className={`cursor-pointer ${activeNetworkFilter === base.id ? NETWORK_COLORS[base.id] : 'bg-gray-100 text-gray-800'}`}
+              onClick={() => toggleNetworkFilter(base.id)}
             >
-              Base Sepolia
+              Base
             </Badge>
           </div>
         </div>
@@ -475,16 +475,16 @@ export const Transactions: FunctionComponent<Props> = (props) => {
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Badge
-            className={`cursor-pointer ${activeNetworkFilter === polygonAmoy.id ? NETWORK_COLORS[polygonAmoy.id] : 'bg-gray-100 text-gray-800'}`}
-            onClick={() => toggleNetworkFilter(polygonAmoy.id)}
+            className={`cursor-pointer ${activeNetworkFilter === polygon.id ? NETWORK_COLORS[polygon.id] : 'bg-gray-100 text-gray-800'}`}
+            onClick={() => toggleNetworkFilter(polygon.id)}
           >
-            Polygon Amoy
+            Polygon
           </Badge>
           <Badge
-            className={`cursor-pointer ${activeNetworkFilter === baseSepolia.id ? NETWORK_COLORS[baseSepolia.id] : 'bg-gray-100 text-gray-800'}`}
-            onClick={() => toggleNetworkFilter(baseSepolia.id)}
+            className={`cursor-pointer ${activeNetworkFilter === base.id ? NETWORK_COLORS[base.id] : 'bg-gray-100 text-gray-800'}`}
+            onClick={() => toggleNetworkFilter(base.id)}
           >
-            Base Sepolia
+            Base
           </Badge>
         </div>
       </div>
@@ -508,7 +508,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
                     key={transaction.id}
                     className="p-4 pl-0 hover:bg-gray-50 dark:hover:bg-white/5"
                     onClick={() => router.push(
-                      `/dashboard/transaction/${transaction.circle_transaction_id}?networkId=${transaction.network_id || polygonAmoy.id}`
+                      `/dashboard/transaction/${transaction.circle_transaction_id}?networkId=${transaction.network_id || polygon.id}`
                     )}
                   >
                     <div className="flex items-start gap-2">

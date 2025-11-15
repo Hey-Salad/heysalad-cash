@@ -2,7 +2,9 @@ import { createClient } from "@/lib/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-11-20.acacia",
+});
 const OnrampSessionResource = Stripe.StripeResource.extend({
   create: Stripe.StripeResource.method({
     method: "POST",
@@ -63,16 +65,28 @@ export async function POST(req: NextRequest) {
         destination_currency: "usdc",
         destination_exchange_amount: "10",
         supported_destination_networks: ["base", "polygon"],
-        destination_network: body.chain,
+        destination_network: body.chain || "polygon",
       },
     })) as Stripe.Response<{ client_secret: string }>;
 
     return NextResponse.json({ clientSecret: onrampSession.client_secret });
   } catch (error) {
     console.error("Error requesting Stripe onramp url:", error);
+    
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+    }
 
     return NextResponse.json(
-      { error: "Internal server error while requesting Stripe onramp url" },
+      { 
+        error: "Internal server error while requesting Stripe onramp url",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 },
     );
   }
