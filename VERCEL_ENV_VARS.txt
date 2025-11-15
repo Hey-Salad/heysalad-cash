@@ -1,0 +1,45 @@
+# Copy these environment variables to Vercel
+# Go to: Project Settings → Environment Variables
+
+# Deployment URL (update after first deploy)
+VERCEL_URL=https://heysalad.cash
+NEXT_PUBLIC_VERCEL_URL=https://heysalad.cash
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://yfujqbciditibrehrzvf.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmdWpxYmNpZGl0aWJyZWhyenZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNTMzNjAsImV4cCI6MjA3ODcyOTM2MH0.CvBbZ2EBb7WvXQSLsCqKyt8cq0OlGCMGCXybUFW3bUk
+SUPABASE_SERVICE_ROLE_KEY=[Get from .env]
+SUPABASE_DB_PASSWORD=[Get from .env]
+
+# Circle
+CIRCLE_API_KEY=[Get from .env]
+NEXT_PUBLIC_CIRCLE_CLIENT_URL=https://modular-sdk.circle.com/v1/rpc/w3s/buidl
+NEXT_PUBLIC_CIRCLE_CLIENT_KEY=[Get from .env]
+CIRCLE_ENTITY_SECRET=[Get from .env]
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=[Get from .env]
+STRIPE_SECRET_KEY=[Get from .env]
+STRIPE_WEBHOOK_SECRET=[Get from .env]
+
+# Twilio
+TWILIO_ACCOUNT_SID=[Get from .env]
+TWILIO_AUTH_TOKEN=[Get from .env]
+TWILIO_API_KEY_SID=[Get from .env]
+TWILIO_API_KEY_SECRET=[Get from .env]
+TWILIO_AUTH_TOKEN_SID=[Get from .env]
+TWILIO_PHONE_NUMBER=[Get from .env]
+TWILIO_SIP_DOMAIN=[Get from .env]
+TWILIO_VERIFY_SERVICE_SID=[Get from .env]
+
+# SendGrid
+SENDGRID_API_KEY=[Get from .env]
+SENDGRID_FROM_EMAIL=[Get from .env]
+
+# Cloudflare
+CLOUDFLARE_API_KEY=[Get from .env]
+
+# OpenAI
+OPENAI_API_KEY=[Get from .env]
+
+# IMPORTANT: Set all variables for "Production", "Preview", and "Development" environments

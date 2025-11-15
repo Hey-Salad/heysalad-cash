@@ -16,10 +16,10 @@ const NETWORK_NAMES: Record<number, string> = {
 
 export async function GET(
   req: NextRequest,
-  props: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = props.params;
+    const { id } = await props.params;
     // Get network ID from query parameter or default to Polygon Amoy
     const url = new URL(req.url);
     const networkId = parseInt(
