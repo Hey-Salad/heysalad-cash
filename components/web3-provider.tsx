@@ -191,6 +191,11 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
 
                 if (!response.ok) {
+                    // Silently return null if credential not found (user hasn't set up passkey yet)
+                    if (response.status === 404 || response.status === 401) {
+                        return null;
+                    }
+                    console.warn('Failed to load credential:', response.status);
                     return null;
                 }
 
@@ -207,7 +212,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 }
             } catch (e) {
-                console.error('Error loading credential from database:', e);
+                // Silently handle errors - user may not have passkey set up yet
+                if (e instanceof Error && !e.message.includes('Failed to fetch')) {
+                    console.warn('Error loading credential:', e.message);
+                }
             }
             return null;
         };

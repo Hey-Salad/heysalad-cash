@@ -52,22 +52,18 @@ export async function GET(req: NextRequest) {
       .eq("profile_id", profileId)
       .limit(1);
 
-    if (walletError || !passkeyCredential) {
+    if (walletError) {
       console.error("Error fetching wallet:", walletError);
-      return NextResponse.json(
-        { error: "Wallet not found in database" },
-        { status: 404 },
-      );
+      // Return empty array instead of error - user may not have set up passkey yet
+      return NextResponse.json({ credential: [] });
     }
 
     // Get the passkey credential
     const credential = passkeyCredential;
 
-    if (!credential) {
-      return NextResponse.json(
-        { error: "Passkey credential not found for user" },
-        { status: 404 },
-      );
+    if (!credential || credential.length === 0) {
+      // Return empty array instead of error - user hasn't set up passkey yet
+      return NextResponse.json({ credential: [] });
     }
 
     // Return the credential
