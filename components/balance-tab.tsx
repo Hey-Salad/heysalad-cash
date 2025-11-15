@@ -14,10 +14,18 @@ interface Props {
 }
 
 export default async function BalanceTab({ walletModels }: Props) {
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
     <>
       <form className="flex items-center justify-between w-full pb-4" action={signOutAction}>
-        <p className="text-2xl font-semibold">CoinApp</p>
+        <p className="text-2xl font-semibold">{getGreeting()}</p>
         <Button variant="ghost" size="icon">
           <LogOut />
         </Button>

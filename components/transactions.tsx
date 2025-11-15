@@ -69,6 +69,16 @@ async function syncTransactions(
   circleWalletId: string
 ) {
   try {
+    // Skip API calls for placeholder wallets
+    if (!circleWalletId || 
+        circleWalletId === "skipped-setup" || 
+        circleWalletId === "pending-setup" ||
+        circleWalletId === "incomplete-setup" ||
+        circleWalletId === "0x0000000000000000000000000000000000000000") {
+      console.log("Skipping transaction sync for placeholder wallet");
+      return [];
+    }
+
     // Check for both networks - first Polygon Amoy
     const polygonResponse = await fetch(
       `${baseUrl}/api/wallet/transactions`,
@@ -109,14 +119,24 @@ async function syncTransactions(
       const data: TransfersResponse = await polygonResponse.json();
       polygonTransactions = data.transactions || [];
     } else {
-      console.error("Polygon API response error:", await polygonResponse.json());
+      try {
+        const errorData = await polygonResponse.json();
+        console.error("Polygon API response error:", polygonResponse.status, errorData);
+      } catch (e) {
+        console.error("Polygon API error:", polygonResponse.status, polygonResponse.statusText);
+      }
     }
 
     if (baseResponse.ok) {
       const data: TransfersResponse = await baseResponse.json();
       baseTransactions = data.transactions || [];
     } else {
-      console.error("Base API response error:", await baseResponse.json());
+      try {
+        const errorData = await baseResponse.json();
+        console.error("Base API response error:", baseResponse.status, errorData);
+      } catch (e) {
+        console.error("Base API error:", baseResponse.status, baseResponse.statusText);
+      }
     }
 
     // Combine all transactions
