@@ -73,7 +73,7 @@ export default function BottomTabNavigation() {
   return (
     <TabsList className="absolute bottom-0 left-0 grid w-full grid-cols-4 h-auto p-2">
       <TabsTrigger onClick={handleTabChange} value="balance">
-        <p className="text-lg">${formattedWalletBalance}</p>
+        <p className="text-lg">$</p>
       </TabsTrigger>
       <TabsTrigger value="wallet">
         <Wallet />

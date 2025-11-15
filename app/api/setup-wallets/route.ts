@@ -114,7 +114,10 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Create new wallet records
-      const { error: insertError } = await supabase.from("wallets").insert([
+      console.log("Creating new wallets for profile:", profileData.id);
+      console.log("Wallet address:", walletAddress);
+      
+      const { data: insertedWallets, error: insertError } = await supabase.from("wallets").insert([
         {
           profile_id: profileData.id,
           wallet_address: walletAddress,
@@ -135,15 +138,17 @@ export async function POST(req: NextRequest) {
           passkey_credential: credentialString,
           circle_wallet_id: walletAddress,
         },
-      ]);
+      ]).select();
 
       if (insertError) {
         console.error("Error inserting new wallets:", insertError);
         return NextResponse.json(
-          { error: "Could not create wallets" },
+          { error: "Could not create wallets", details: insertError.message },
           { status: 500 }
         );
       }
+
+      console.log("Wallets created successfully:", insertedWallets);
     }
 
     // Update user metadata to mark wallet setup as complete
