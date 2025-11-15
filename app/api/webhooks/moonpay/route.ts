@@ -75,6 +75,36 @@ export async function POST(req: NextRequest) {
       case "transaction_failed":
         await handleTransactionFailed(supabase, event.data);
         break;
+      // Sell transactions (crypto to fiat)
+      case "sell_transaction_created":
+      case "sell_transaction_updated":
+      case "sell_transaction_failed":
+        console.log("Sell transaction event:", event.type, event.data.id);
+        break;
+      // Swap transactions
+      case "swap_transaction_created":
+      case "swap_transaction_completed":
+      case "swap_transaction_failed":
+        console.log("Swap transaction event:", event.type, event.data.id);
+        break;
+      // Account and identity events
+      case "account_reviewed":
+      case "identity_check_updated":
+      case "business_identity_updated":
+        console.log("Account/Identity event:", event.type);
+        break;
+      // Balance and payout events
+      case "balance_transaction_created":
+      case "balance_transaction_updated":
+      case "balance_transaction_failed":
+      case "preferred_payout_account_set":
+        console.log("Balance/Payout event:", event.type);
+        break;
+      // Virtual account events
+      case "virtual_account_status_updated":
+      case "virtual_account_transaction_status_updated":
+        console.log("Virtual account event:", event.type);
+        break;
       default:
         console.log("Unhandled MoonPay event type:", event.type);
     }
