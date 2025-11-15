@@ -125,9 +125,13 @@ const Web3Context = createContext<Web3ContextType>({
 // Hook to use the Web3 context
 export const useWeb3 = () => useContext(Web3Context);
 
-const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-    ? process.env.NEXT_PUBLIC_VERCEL_URL
-    : "http://localhost:3000";
+const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http') 
+        ? process.env.NEXT_PUBLIC_VERCEL_URL
+        : process.env.NEXT_PUBLIC_VERCEL_URL 
+            ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+            : "http://localhost:3000";
 
 // Provider component
 export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
