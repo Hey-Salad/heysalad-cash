@@ -51,7 +51,12 @@ interface Transaction {
 }
 
 interface Props {
-  wallet: Wallet;
+  wallets: Array<{
+    wallet_address: string;
+    blockchain: string;
+    id?: string;
+    profile_id?: string;
+  }>;
   profile: {
     id: any;
   } | null;
@@ -64,103 +69,92 @@ const NETWORK_COLORS: Record<number, string> = {
 
 async function syncTransactions(
   supabase: SupabaseClient,
-  walletId: string,
-  profileId: string,
-  walletAddress: string
+  wallets: Array<{
+    wallet_address: string;
+    blockchain: string;
+    id?: string;
+    profile_id?: string;
+  }>,
+  profileId: string
 ) {
   try {
-    // Skip API calls for placeholder wallets
-    if (!walletAddress || 
-        walletAddress === "skipped-setup" || 
-        walletAddress === "pending-setup" ||
-        walletAddress === "incomplete-setup" ||
-        walletAddress === "0x0" ||
-        walletAddress === "0x0000000000000000000000000000000000000000") {
-      console.log("Skipping transaction sync for placeholder wallet");
-      return [];
-    }
+    const allTransactions: SimpleTransaction[] = [];
 
-    console.log(`Fetching transactions for wallet address: ${walletAddress}`);
-
-    // Check for both networks - first Polygon
-    const polygonResponse = await fetch(
-      `${baseUrl}/api/wallet/transactions`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          walletId: walletAddress,
-          networkId: polygon.id,
-          pageSize: 50 // Get maximum number of transactions
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+    // Fetch transactions for each wallet
+    for (const wallet of wallets) {
+      const walletAddress = wallet.wallet_address;
+      
+      // Skip API calls for placeholder wallets
+      if (!walletAddress || 
+          walletAddress === "skipped-setup" || 
+          walletAddress === "pending-setup" ||
+          walletAddress === "incomplete-setup" ||
+          walletAddress === "0x0" ||
+          walletAddress === "0x0000000000000000000000000000000000000000") {
+        console.log("Skipping transaction sync for placeholder wallet");
+        continue;
       }
-    );
 
-    // Then Base
-    const baseResponse = await fetch(
-      `${baseUrl}/api/wallet/transactions`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          walletId: walletAddress,
-          networkId: base.id,
-          pageSize: 50
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+      console.log(`Fetching transactions for ${wallet.blockchain} wallet: ${walletAddress}`);
+
+      // Determine which network to query based on blockchain
+      let networkId: number;
+      if (wallet.blockchain === "POLYGON") {
+        networkId = polygon.id;
+      } else if (wallet.blockchain === "BASE") {
+        networkId = base.id;
+      } else {
+        console.log(`Skipping unsupported blockchain: ${wallet.blockchain}`);
+        continue;
       }
-    );
 
-    // Parse responses
-    let polygonTransactions: SimpleTransaction[] = [];
-    let baseTransactions: SimpleTransaction[] = [];
+      // Fetch transactions for this wallet on its network
+      const response = await fetch(
+        `${baseUrl}/api/wallet/transactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            walletId: walletAddress,
+            networkId: networkId,
+            pageSize: 50
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    if (polygonResponse.ok) {
-      const data: TransfersResponse = await polygonResponse.json();
-      polygonTransactions = data.transactions || [];
-    } else {
-      try {
-        const errorData = await polygonResponse.json();
-        console.error("Polygon API response error:", polygonResponse.status, errorData);
-      } catch (e) {
-        console.error("Polygon API error:", polygonResponse.status, polygonResponse.statusText);
-      }
-    }
-
-    if (baseResponse.ok) {
-      const data: TransfersResponse = await baseResponse.json();
-      baseTransactions = data.transactions || [];
-    } else {
-      try {
-        const errorData = await baseResponse.json();
-        console.error("Base API response error:", baseResponse.status, errorData);
-      } catch (e) {
-        console.error("Base API error:", baseResponse.status, baseResponse.statusText);
+      if (response.ok) {
+        const data: TransfersResponse = await response.json();
+        if (data.transactions && data.transactions.length > 0) {
+          allTransactions.push(...data.transactions);
+        }
+      } else {
+        try {
+          const errorData = await response.json();
+          console.error(`${wallet.blockchain} API response error:`, response.status, errorData);
+        } catch (e) {
+          console.error(`${wallet.blockchain} API error:`, response.status, response.statusText);
+        }
       }
     }
-
-    // Combine all transactions
-    const allTransactions = [...polygonTransactions, ...baseTransactions];
 
     if (allTransactions.length === 0) {
       // Even if no new transactions, return existing ones from the database
       const { data: existingTransactions } = await supabase
         .from("transactions")
         .select("*")
-        .eq("wallet_id", walletId)
+        .eq("profile_id", profileId)
         .order("created_at", { ascending: false });
 
       return existingTransactions || [];
     }
 
-    // Get existing transactions from database
+    // Get existing transactions from database for this profile
     const { data: existingTransactions, error: fetchError } = await supabase
       .from("transactions")
       .select("circle_transaction_id")
-      .eq("wallet_id", walletId);
+      .eq("profile_id", profileId);
 
     if (fetchError) {
       console.error("Error fetching existing transactions:", fetchError);
@@ -190,16 +184,21 @@ async function syncTransactions(
         const toAddress = tx.to || tx.toAddress || "";
         const fromAddress = tx.from || tx.fromAddress || "";
 
-        // Only compare if both values exist and are not empty
-        const isReceived = toAddress && walletAddress ?
-          toAddress.toLowerCase() === walletAddress.toLowerCase() :
+        // Find which wallet this transaction belongs to
+        const matchingWallet = wallets.find(w => 
+          (toAddress && toAddress.toLowerCase() === w.wallet_address.toLowerCase()) ||
+          (fromAddress && fromAddress.toLowerCase() === w.wallet_address.toLowerCase())
+        );
+
+        const isReceived = toAddress && matchingWallet ?
+          toAddress.toLowerCase() === matchingWallet.wallet_address.toLowerCase() :
           false;
 
-        const transactionType = isReceived ? "USDC_TRANSFER" : "OUTBOUND";
+        const transactionType = isReceived ? "USDC_TRANSFER_IN" : "USDC_TRANSFER_OUT";
 
         // Create database record
         return {
-          wallet_id: walletId,
+          wallet_id: matchingWallet?.id || wallets[0]?.id || "",
           profile_id: profileId,
           circle_transaction_id: tx.id,
           transaction_type: tx.transactionType || transactionType,
@@ -226,11 +225,11 @@ async function syncTransactions(
       }
     }
 
-    // Return all transactions from database
+    // Return all transactions from database for this profile
     const { data: allDbTransactions, error: finalFetchError } = await supabase
       .from("transactions")
       .select("*")
-      .eq("wallet_id", walletId)
+      .eq("profile_id", profileId)
       .order("created_at", { ascending: false });
 
     if (finalFetchError) {
@@ -360,17 +359,16 @@ export const Transactions: FunctionComponent<Props> = (props) => {
       setRefreshing(true);
       setError(null);
 
-      if (!props.wallet?.id || !props.profile?.id || !props.wallet?.wallet_address) {
+      if (!props.wallets || props.wallets.length === 0 || !props.profile?.id) {
         setError("Missing wallet or profile information");
         return;
       }
 
-      // Sync and get transactions
+      // Sync and get transactions from all wallets
       const transactions = await syncTransactions(
         supabase,
-        props.wallet.id,
-        props.profile.id,
-        props.wallet.wallet_address
+        props.wallets,
+        props.profile.id
       );
 
       setData(transactions);
@@ -392,7 +390,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
   };
 
   useEffect(() => {
-    if (!props.wallet?.id || !props.profile?.id) {
+    if (!props.wallets || props.wallets.length === 0 || !props.profile?.id) {
       return;
     }
 
@@ -415,7 +413,7 @@ export const Transactions: FunctionComponent<Props> = (props) => {
     return () => {
       supabase.removeChannel(transactionSubscription);
     };
-  }, [props.wallet?.id, props.profile?.id, props.wallet?.wallet_address]);
+  }, [props.wallets, props.profile?.id]);
 
   if (loading) {
     return <Skeleton className="w-full h-[30px] rounded-md" />;

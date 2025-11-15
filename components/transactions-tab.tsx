@@ -5,13 +5,18 @@ import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 
 interface Props {
-  primaryWallet: Wallet
+  wallets: Array<{
+    wallet_address: string;
+    blockchain: string;
+    id?: string;
+    profile_id?: string;
+  }>;
   profile: {
     id: any;
   } | null;
 }
 
-export default async function TransactionsTab({ primaryWallet, profile }: Props) {
+export default async function TransactionsTab({ wallets, profile }: Props) {
   return (
     <>
       <form className="flex items-center justify-between w-full pb-4" action={signOutAction}>
@@ -22,7 +27,7 @@ export default async function TransactionsTab({ primaryWallet, profile }: Props)
           <LogOut />
         </Button>
       </form>
-      <Transactions wallet={primaryWallet} profile={profile} />
+      <Transactions wallets={wallets} profile={profile} />
     </>
   )
 }

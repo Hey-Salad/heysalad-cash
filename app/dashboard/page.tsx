@@ -94,7 +94,7 @@ export default async function Dashboard() {
         <WalletTab />
       </TabsContent>
       <TabsContent value="transactions">
-        <TransactionsTab primaryWallet={primaryWallet} profile={profile} />
+        <TransactionsTab wallets={walletModels} profile={profile} />
       </TabsContent>
       <TabsContent value="settings">
         <SettingsPage />
