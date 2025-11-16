@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Store invoice metadata in database (optional - invoice will still download)
-    let invoice = null;
+    let invoice: any = null;
     try {
       const { data: invoiceData, error: insertError } = await supabase
         .from('invoices')
