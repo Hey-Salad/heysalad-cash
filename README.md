@@ -1,10 +1,22 @@
-# HeySalad ® Cash 💸
+# HeySalad® Cash 💸
 
-![HeySalad Banner](public/heysalad-logo-black.png)
+![HeySalad Cash Banner](public/HeySalad_Cash_Banner.png)
 
 > **Multi-chain Web3 payment platform with passkey security and gasless transactions**
 
-A production-ready cryptocurrency payment application leveraging Circle's Modular Wallets for secure, user-friendly transactions across Base, Polygon, and Arc networks.
+A production-ready cryptocurrency payment application leveraging Circle's Modular Wallets for secure, user-friendly transactions across Base, Polygon, and Arbitrum networks.
+
+<div align="center">
+
+### Supported Networks
+
+<img src="public/base-logo.svg" alt="Base" width="80" height="80" style="margin: 0 10px;" />
+<img src="public/polygon-logo.svg" alt="Polygon" width="80" height="80" style="margin: 0 10px;" />
+<img src="public/arbitrum-logo.svg" alt="Arbitrum" width="80" height="80" style="margin: 0 10px;" />
+
+**Base** • **Polygon** • **Arbitrum**
+
+</div>
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
@@ -27,9 +39,9 @@ A production-ready cryptocurrency payment application leveraging Circle's Modula
 - 30-second onboarding flow
 
 ### ⛓️ **Multi-Chain Support**
-- **Base Mainnet** - Coinbase's Layer 2
-- **Polygon Mainnet** - Low-fee transactions
-- **Arc Mainnet** - USDC as gas
+- <img src="public/base-logo.svg" width="16" height="16" /> **Base Mainnet** - Coinbase's Layer 2
+- <img src="public/polygon-logo.svg" width="16" height="16" /> **Polygon Mainnet** - Low-fee transactions
+- <img src="public/arbitrum-logo.svg" width="16" height="16" /> **Arbitrum Mainnet** - Fast & scalable
 - Single passkey controls all chains
 
 ### ⛽ **Gasless Transactions**
@@ -313,7 +325,7 @@ npm run build
 ## 🚧 **Current Status**
 
 ### **Production Ready** ✅
-- Live on mainnet (Base, Polygon, Arc)
+- Live on mainnet (Base, Polygon, Arbitrum)
 - Real USDC transactions
 - Passkey authentication working
 - Fiat on-ramps integrated
@@ -323,7 +335,7 @@ npm run build
 - Transaction history limited to USDC transfers
 - No NFT support yet
 - Single token (USDC) only
-- Arc chain: balance display only (no transactions yet)
+- Arbitrum chain: balance display only (no transactions yet)
 
 ### **Roadmap**
 - [ ] Multi-token support
