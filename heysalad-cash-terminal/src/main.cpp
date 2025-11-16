@@ -15,6 +15,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <qrcode.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 
 #include <algorithm>
 #include <string>
@@ -36,6 +38,7 @@ constexpr uint32_t STATUS_BROADCAST_INTERVAL_MS = 5000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 10000;
 constexpr uint32_t LAURA_STATUS_INTERVAL_MS = Config::LAURA_API.status_interval_s * 1000UL;
 constexpr uint32_t LAURA_COMMAND_POLL_INTERVAL_MS = Config::LAURA_API.command_poll_interval_s * 1000UL;
+constexpr uint32_t TERMINAL_COMMAND_POLL_INTERVAL_MS = 3000; // Poll every 3 seconds
 constexpr uint32_t BLE_CHUNK_DELAY_MS = 50;
 constexpr size_t BLE_CHUNK_SIZE = 200;
 
@@ -126,6 +129,7 @@ private:
     void updateStreaming();
     void maintainWiFi();
     void updateLaura();
+    void updateTerminalCommands();
     bool setAiEnabled(bool enabled, const String& modelPath = String());
     bool runAiSnapshot(std::vector<AiManager::Detection>& detections);
     void broadcastAiStatus();
@@ -197,12 +201,16 @@ private:
     unsigned long lastLauraStatus = 0;
     unsigned long lastLauraCommandPoll = 0;
     unsigned long lastLauraFrameUpload = 0;
+    unsigned long lastTerminalCommandPoll = 0;
 
     bool wifiReconnectPending = false;
     unsigned long wifiReconnectRequestAt = 0;
 
     bool pendingRestart = false;
     unsigned long restartRequestedAt = 0;
+
+    String terminalId;
+    String heysaladApiUrl = "https://heysalad.cash";
 
     uint32_t framesSent = 0;
     float fps = 0.0f;
@@ -268,6 +276,7 @@ void HeySaladCameraServer::loop()
     updateStreaming();
     maintainWiFi();
     updateLaura();
+    updateTerminalCommands();
 
     const unsigned long now = millis();
     if (now - lastStatusBroadcast >= STATUS_BROADCAST_INTERVAL_MS) {
@@ -1410,6 +1419,120 @@ void HeySaladCameraServer::updateLaura()
             lastLauraFrameUpload = now;
         }
     }
+}
+
+void HeySaladCameraServer::updateTerminalCommands()
+{
+    // Only poll when connected to WiFi (not in AP mode)
+    if (WiFi.status() != WL_CONNECTED) {
+        return;
+    }
+
+    const unsigned long now = millis();
+    if (now - lastTerminalCommandPoll < TERMINAL_COMMAND_POLL_INTERVAL_MS) {
+        return;
+    }
+    lastTerminalCommandPoll = now;
+
+    // Generate terminal ID from MAC address if not set
+    if (terminalId.isEmpty()) {
+        uint8_t mac[6];
+        WiFi.macAddress(mac);
+        terminalId = String("HSC-") +
+                    String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
+        terminalId.toUpperCase();
+        Serial.printf("[Terminal] ID: %s\n", terminalId.c_str());
+    }
+
+    // Poll for commands
+    HTTPClient http;
+    WiFiClientSecure client;
+    client.setInsecure(); // Skip SSL verification for simplicity
+
+    String pollUrl = heysaladApiUrl + "/api/terminal/poll";
+    if (!http.begin(client, pollUrl)) {
+        Serial.println(F("[Terminal] Failed to begin HTTP"));
+        return;
+    }
+
+    http.addHeader("Content-Type", "application/json");
+
+    DynamicJsonDocument pollDoc(512);
+    pollDoc["terminalId"] = terminalId;
+    pollDoc["deviceInfo"]["ip"] = WiFi.localIP().toString();
+    pollDoc["deviceInfo"]["rssi"] = WiFi.RSSI();
+    pollDoc["deviceInfo"]["mode"] = (currentDisplayMode == DisplayMode::PAYMENT_QR) ? "payment_qr" : "idle_bmp";
+
+    String pollPayload;
+    serializeJson(pollDoc, pollPayload);
+
+    int httpCode = http.POST(pollPayload);
+
+    if (httpCode == 200) {
+        String response = http.getString();
+        DynamicJsonDocument responseDoc(2048);
+        DeserializationError error = deserializeJson(responseDoc, response);
+
+        if (!error && responseDoc.containsKey("command") && !responseDoc["command"].isNull()) {
+            JsonObject command = responseDoc["command"];
+            String commandId = command["id"].as<String>();
+            String commandType = command["type"].as<String>();
+            JsonObject commandData = command["data"];
+
+            Serial.printf("[Terminal] Command: %s (ID: %s)\n", commandType.c_str(), commandId.c_str());
+
+            bool success = false;
+            DynamicJsonDocument responsePayload(512);
+
+            // Execute command
+            if (commandType == "display_qr") {
+                String qrData = commandData["data"].as<String>();
+                String qrLabel = commandData["label"] | "Payment Request";
+                setDisplayMode(DisplayMode::PAYMENT_QR, qrData.c_str(), qrLabel.c_str());
+                success = true;
+                responsePayload["message"] = "QR code displayed";
+            }
+            else if (commandType == "return_idle") {
+                setDisplayMode(DisplayMode::IDLE_BMP);
+                success = true;
+                responsePayload["message"] = "Returned to idle";
+            }
+            else if (commandType == "get_status") {
+                success = true;
+                responsePayload["mode"] = (currentDisplayMode == DisplayMode::PAYMENT_QR) ? "payment_qr" : "idle_bmp";
+                responsePayload["display_ready"] = displayReady;
+                responsePayload["ip"] = WiFi.localIP().toString();
+            }
+            else {
+                success = false;
+                responsePayload["error"] = "Unknown command type";
+            }
+
+            // Send response
+            http.end();
+            HTTPClient responseHttp;
+            String responseUrl = heysaladApiUrl + "/api/terminal/response";
+            if (responseHttp.begin(client, responseUrl)) {
+                responseHttp.addHeader("Content-Type", "application/json");
+
+                DynamicJsonDocument responseDoc(1024);
+                responseDoc["commandId"] = commandId;
+                responseDoc["success"] = success;
+                responseDoc["response"] = responsePayload;
+
+                String responseStr;
+                serializeJson(responseDoc, responseStr);
+                responseHttp.POST(responseStr);
+                responseHttp.end();
+
+                Serial.printf("[Terminal] Response sent: %s\n", success ? "success" : "failed");
+            }
+        }
+    } else if (httpCode != -1) {
+        Serial.printf("[Terminal] Poll failed: %d\n", httpCode);
+    }
+
+    http.end();
 }
 
 void HeySaladCameraServer::handleWebSocketEvent(AsyncWebSocket* srv, AsyncWebSocketClient* client,

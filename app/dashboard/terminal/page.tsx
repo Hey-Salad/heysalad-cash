@@ -10,15 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
-  Wifi,
-  WifiOff,
   QrCode,
   Monitor,
-  Settings,
-  RefreshCw,
   Loader2,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Wifi
 } from 'lucide-react';
 import {
   Dialog,
@@ -30,87 +27,100 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-interface TerminalStatus {
-  mode: 'idle_bmp' | 'payment_qr';
-  display_ready: boolean;
-  connected?: boolean;
+interface TerminalDevice {
+  terminal_id: string;
+  last_seen: string;
+  device_info: {
+    ip?: string;
+    rssi?: number;
+    mode?: 'idle_bmp' | 'payment_qr';
+  };
+  status: 'online' | 'offline';
 }
 
 export default function TerminalPage() {
   const router = useRouter();
-  const [terminalIP, setTerminalIP] = useState('');
-  const [savedIP, setSavedIP] = useState('');
-  const [terminalStatus, setTerminalStatus] = useState<TerminalStatus | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [terminals, setTerminals] = useState<TerminalDevice[]>([]);
+  const [selectedTerminal, setSelectedTerminal] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [qrData, setQrData] = useState('');
   const [qrLabel, setQrLabel] = useState('');
   const [showQrDialog, setShowQrDialog] = useState(false);
 
   useEffect(() => {
-    // Load saved terminal IP from localStorage
-    const saved = localStorage.getItem('terminal_ip');
+    // Load saved terminal ID
+    const saved = localStorage.getItem('selected_terminal_id');
     if (saved) {
-      setSavedIP(saved);
-      setTerminalIP(saved);
-      checkTerminalStatus(saved);
+      setSelectedTerminal(saved);
     }
+
+    // Poll for online terminals
+    loadTerminals();
+    const interval = setInterval(loadTerminals, 10000); // Every 10s
+    return () => clearInterval(interval);
   }, []);
 
-  const checkTerminalStatus = async (ip: string) => {
-    if (!ip) return;
-
+  const loadTerminals = async () => {
     try {
-      const response = await fetch('/api/terminal/device/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ terminalIP: ip })
-      });
-
+      const response = await fetch('/api/terminal/list');
       if (response.ok) {
         const data = await response.json();
-        setTerminalStatus({ ...data, connected: true });
-      } else {
-        setTerminalStatus({ mode: 'idle_bmp', display_ready: false, connected: false });
+        setTerminals(data.terminals || []);
       }
     } catch (error) {
-      setTerminalStatus({ mode: 'idle_bmp', display_ready: false, connected: false });
+      console.error('Failed to load terminals:', error);
     }
   };
 
-  const connectToTerminal = async () => {
-    if (!terminalIP) {
-      toast.error('Please enter a terminal IP address');
-      return;
+  const sendCommand = async (commandType: string, commandData: any = {}) => {
+    if (!selectedTerminal) {
+      toast.error('Please select a terminal first');
+      return false;
     }
 
-    setIsConnecting(true);
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/terminal/device/status', {
+      // Create command
+      const cmdResponse = await fetch('/api/terminal/command', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ terminalIP })
+        body: JSON.stringify({
+          terminalId: selectedTerminal,
+          commandType,
+          commandData
+        })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setTerminalStatus({ ...data, connected: true });
-        localStorage.setItem('terminal_ip', terminalIP);
-        setSavedIP(terminalIP);
-        toast.success('Connected to terminal!');
-      } else {
-        throw new Error('Failed to connect');
+      if (!cmdResponse.ok) {
+        throw new Error('Failed to send command');
       }
-    } catch (error) {
-      console.error('Connection error:', error);
-      toast.error('Failed to connect to terminal. Check IP and network.');
-      setTerminalStatus({ mode: 'idle_bmp', display_ready: false, connected: false });
+
+      const { commandId } = await cmdResponse.json();
+
+      // Poll for response (max 15 seconds)
+      for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const respResponse = await fetch(`/api/terminal/response?commandId=${commandId}`);
+        if (respResponse.ok) {
+          const data = await respResponse.json();
+          if (data.status === 'completed') {
+            return true;
+          } else if (data.status === 'failed') {
+            throw new Error(data.response?.error || 'Command failed');
+          }
+        }
+      }
+
+      throw new Error('Command timeout');
+    } catch (error: any) {
+      console.error('Command error:', error);
+      toast.error(error.message || 'Failed to execute command');
+      return false;
     } finally {
-      setIsConnecting(false);
+      setIsLoading(false);
     }
   };
 
@@ -120,68 +130,35 @@ export default function TerminalPage() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/terminal/qr', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          terminalIP: savedIP,
-          data: qrData,
-          label: qrLabel || 'Payment Request'
-        })
-      });
+    const success = await sendCommand('display_qr', {
+      data: qrData,
+      label: qrLabel || 'Payment Request'
+    });
 
-      if (response.ok) {
-        toast.success('QR code displayed on terminal!');
-        setShowQrDialog(false);
-        setQrData('');
-        setQrLabel('');
-        await checkTerminalStatus(savedIP);
-      } else {
-        throw new Error('Failed to display QR');
-      }
-    } catch (error) {
-      console.error('Display error:', error);
-      toast.error('Failed to display QR code');
-    } finally {
-      setIsLoading(false);
+    if (success) {
+      toast.success('QR code displayed on terminal!');
+      setShowQrDialog(false);
+      setQrData('');
+      setQrLabel('');
+      await loadTerminals();
     }
   };
 
   const returnToIdle = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/terminal/idle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ terminalIP: savedIP })
-      });
-
-      if (response.ok) {
-        toast.success('Terminal returned to idle mode');
-        await checkTerminalStatus(savedIP);
-      } else {
-        throw new Error('Failed to return to idle');
-      }
-    } catch (error) {
-      console.error('Idle error:', error);
-      toast.error('Failed to change display mode');
-    } finally {
-      setIsLoading(false);
+    const success = await sendCommand('return_idle');
+    if (success) {
+      toast.success('Terminal returned to idle mode');
+      await loadTerminals();
     }
   };
 
-  const refreshStatus = () => {
-    if (savedIP) {
-      checkTerminalStatus(savedIP);
-      toast.success('Status refreshed');
-    }
+  const selectTerminal = (terminalId: string) => {
+    setSelectedTerminal(terminalId);
+    localStorage.setItem('selected_terminal_id', terminalId);
+    toast.success('Terminal selected');
   };
+
+  const selectedTerminalData = terminals.find(t => t.terminal_id === selectedTerminal);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -200,129 +177,93 @@ export default function TerminalPage() {
         <div className="flex flex-col gap-2 mb-6">
           <h1 className="text-2xl font-bold">Payment Terminal</h1>
           <p className="text-sm text-muted-foreground">
-            Control your HeySalad Cash payment terminal
+            Control your HeySalad Cash payment terminal (no IP needed!)
           </p>
         </div>
 
-        {/* Connection Card */}
+        {/* Terminal Selection */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Terminal Connection</CardTitle>
-              {terminalStatus?.connected ? (
-                <Badge className="bg-green-500">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  Connected
-                </Badge>
-              ) : (
-                <Badge variant="secondary">
-                  <XCircle className="h-3 w-3 mr-1" />
-                  Disconnected
-                </Badge>
-              )}
-            </div>
+            <CardTitle className="text-lg">Available Terminals</CardTitle>
             <CardDescription>
-              Connect to your ESP32 terminal device
+              Select a terminal to control
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="terminal-ip">Terminal IP Address</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="terminal-ip"
-                  placeholder="192.168.1.100"
-                  value={terminalIP}
-                  onChange={(e) => setTerminalIP(e.target.value)}
-                  disabled={isConnecting}
-                />
-                <Button
-                  onClick={connectToTerminal}
-                  disabled={isConnecting || !terminalIP}
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Connecting
-                    </>
-                  ) : (
-                    <>
-                      <Wifi className="h-4 w-4 mr-2" />
-                      Connect
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Find your terminal IP on the device display or in your router settings
-              </p>
-            </div>
-
-            {savedIP && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div className="flex items-center gap-2">
-                  {terminalStatus?.connected ? (
-                    <Wifi className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <WifiOff className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="text-sm font-medium">{savedIP}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={refreshStatus}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
+          <CardContent className="space-y-3">
+            {terminals.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Monitor className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No terminals found</p>
+                <p className="text-xs mt-1">Make sure your device is powered on and connected to WiFi</p>
               </div>
             )}
+
+            {terminals.map(terminal => {
+              const isSelected = terminal.terminal_id === selectedTerminal;
+              const isOnline = terminal.status === 'online';
+              const lastSeen = new Date(terminal.last_seen);
+              const minutesAgo = Math.floor((Date.now() - lastSeen.getTime()) / 60000);
+
+              return (
+                <div
+                  key={terminal.terminal_id}
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'border-primary bg-accent'
+                      : 'border-border hover:bg-accent'
+                  }`}
+                  onClick={() => selectTerminal(terminal.terminal_id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Monitor className="h-5 w-5" />
+                    <div>
+                      <p className="font-semibold">{terminal.terminal_id}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-muted-foreground">
+                          {terminal.device_info?.ip || 'Unknown IP'}
+                        </p>
+                        {terminal.device_info?.rssi && (
+                          <Badge variant="outline" className="text-xs">
+                            <Wifi className="h-3 w-3 mr-1" />
+                            {terminal.device_info.rssi} dBm
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {minutesAgo === 0 ? 'Just now' : `${minutesAgo}m ago`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={isOnline ? 'default' : 'secondary'} className={isOnline ? 'bg-green-500' : ''}>
+                      {isOnline ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                      {isOnline ? 'Online' : 'Offline'}
+                    </Badge>
+                    {terminal.device_info?.mode && (
+                      <Badge variant="outline">
+                        {terminal.device_info.mode === 'payment_qr' ? 'QR Active' : 'Idle'}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
-        {/* Terminal Status Card */}
-        {terminalStatus?.connected && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Display Status</CardTitle>
-              <CardDescription>
-                Current terminal display mode
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Monitor className="h-5 w-5" />
-                  <div>
-                    <p className="font-medium">
-                      {terminalStatus.mode === 'payment_qr' ? 'Payment QR Code' : 'Idle Screen'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {terminalStatus.display_ready ? 'Display ready' : 'Display initializing'}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant={terminalStatus.mode === 'payment_qr' ? 'default' : 'secondary'}>
-                  {terminalStatus.mode === 'payment_qr' ? 'Active' : 'Idle'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Terminal Controls */}
-        {terminalStatus?.connected && (
+        {selectedTerminal && selectedTerminalData && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Display Controls</CardTitle>
               <CardDescription>
-                Control what appears on the terminal
+                Control what appears on {selectedTerminalData.terminal_id}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
                 <DialogTrigger asChild>
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" disabled={isLoading}>
                     <QrCode className="h-4 w-4 mr-2" />
                     Display QR Code
                   </Button>
@@ -380,7 +321,7 @@ export default function TerminalPage() {
                 className="w-full"
                 size="lg"
                 onClick={returnToIdle}
-                disabled={isLoading || terminalStatus.mode === 'idle_bmp'}
+                disabled={isLoading || selectedTerminalData.device_info?.mode === 'idle_bmp'}
               >
                 <Monitor className="h-4 w-4 mr-2" />
                 Return to Idle Screen
@@ -390,7 +331,7 @@ export default function TerminalPage() {
         )}
 
         {/* Setup Instructions */}
-        {!terminalStatus?.connected && (
+        {terminals.length === 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Setup Instructions</CardTitle>
@@ -403,22 +344,15 @@ export default function TerminalPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">2. Connect to terminal WiFi</p>
+                <p className="font-medium">2. Terminal connects automatically</p>
                 <p className="text-muted-foreground pl-4">
-                  Network: <code className="bg-muted px-1 py-0.5 rounded">HeySalad-Camera</code><br />
-                  Password: <code className="bg-muted px-1 py-0.5 rounded">SET_ME_AP_PASSWORD</code>
+                  Your terminal will connect to WiFi and appear here within 30 seconds
                 </p>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">3. Configure WiFi (Optional)</p>
+                <p className="font-medium">3. Select and control</p>
                 <p className="text-muted-foreground pl-4">
-                  Visit http://192.168.4.1 to connect the terminal to your WiFi network
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="font-medium">4. Enter terminal IP above</p>
-                <p className="text-muted-foreground pl-4">
-                  Use 192.168.4.1 (AP mode) or find the IP from your router
+                  Click on your terminal to select it, then use the controls above
                 </p>
               </div>
             </CardContent>
