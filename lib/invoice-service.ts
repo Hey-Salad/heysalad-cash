@@ -1,6 +1,8 @@
 import PDFDocument from 'pdfkit';
 import dayjs from 'dayjs';
 import QRCode from 'qrcode';
+import fs from 'fs';
+import path from 'path';
 
 export interface InvoiceBillTo {
   name: string;
@@ -115,9 +117,23 @@ export const buildInvoicePdf = async (payload: InvoiceRenderPayload): Promise<Bu
         headerLeftWidth = Math.max(contentWidth - metaWidth - 10, contentWidth * 0.5);
       }
 
-      // Company info (left side)
-      doc.font('Helvetica-Bold').fontSize(18);
-      doc.text(payload.companyName, headerLeftX, headerTop, { width: headerLeftWidth });
+      // Company info (left side) - HeySalad Logo
+      try {
+        const logoPath = path.join(process.cwd(), 'public', 'heysalad-logo-black.png');
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, headerLeftX, headerTop, { width: 120 });
+          doc.moveDown(3);
+        } else {
+          // Fallback to text if logo not found
+          doc.font('Helvetica-Bold').fontSize(18);
+          doc.text(payload.companyName, headerLeftX, headerTop, { width: headerLeftWidth });
+        }
+      } catch (error) {
+        console.error('Failed to load logo:', error);
+        // Fallback to text
+        doc.font('Helvetica-Bold').fontSize(18);
+        doc.text(payload.companyName, headerLeftX, headerTop, { width: headerLeftWidth });
+      }
 
       doc.font('Helvetica').fontSize(10);
       if (payload.companyAddress) {
@@ -246,11 +262,15 @@ export const buildInvoicePdf = async (payload: InvoiceRenderPayload): Promise<Bu
 
       // Crypto Payment Section
       if (payload.cryptoPayments && payload.cryptoPayments.length > 0) {
-        doc.font('Helvetica-Bold').fontSize(12);
-        doc.fillColor('#1a73e8');
-        doc.text('💎 Crypto Payment Options', margin, doc.y);
+        // Add a separator line
+        doc.moveTo(margin, doc.y).lineTo(margin + contentWidth, doc.y).stroke();
+        doc.moveDown(1);
+
+        doc.font('Helvetica-Bold').fontSize(14);
         doc.fillColor('#000000');
-        doc.moveDown(0.5);
+        doc.text('Payment Information', margin, doc.y);
+        doc.fillColor('#000000');
+        doc.moveDown(0.3);
 
         doc.font('Helvetica').fontSize(9);
         doc.fillColor('#666666');
@@ -258,7 +278,7 @@ export const buildInvoicePdf = async (payload: InvoiceRenderPayload): Promise<Bu
           width: contentWidth
         });
         doc.fillColor('#000000');
-        doc.moveDown(1);
+        doc.moveDown(1.5);
 
         for (const crypto of payload.cryptoPayments) {
           const cryptoY = doc.y;
@@ -277,38 +297,46 @@ export const buildInvoicePdf = async (payload: InvoiceRenderPayload): Promise<Bu
           }
 
           // Chain name with badge
-          doc.font('Helvetica-Bold').fontSize(10);
+          doc.font('Helvetica-Bold').fontSize(11);
           const chainColor = crypto.chain === 'base' ? '#0052FF' : crypto.chain === 'polygon' ? '#8247E5' : '#00C3FF';
           doc.fillColor(chainColor);
-          doc.text(`⛓️ ${crypto.chainName}`, margin, cryptoY);
+          doc.text(`${crypto.chainName}`, margin, cryptoY);
           doc.fillColor('#000000');
+
+          // Draw a subtle border around the payment option
+          doc.roundedRect(margin - 5, cryptoY + 12, contentWidth + 10, 100, 3).stroke('#E0E0E0');
 
           // QR Code (left)
           if (qrBuffer) {
             try {
-              doc.image(qrBuffer, margin, cryptoY + 20, { width: 80, height: 80 });
+              doc.image(qrBuffer, margin + 5, cryptoY + 22, { width: 75, height: 75 });
             } catch (error) {
               console.error('Failed to embed QR code:', error);
             }
           }
 
           // Wallet address (right of QR)
-          doc.font('Helvetica').fontSize(8);
-          doc.fillColor('#666666');
-          doc.text('Wallet Address:', margin + 95, cryptoY + 20);
+          doc.font('Helvetica-Bold').fontSize(8);
           doc.fillColor('#000000');
+          doc.text('Wallet Address', margin + 95, cryptoY + 22);
+
           doc.font('Courier').fontSize(7);
+          doc.fillColor('#000000');
           doc.text(crypto.walletAddress, margin + 95, cryptoY + 35, {
             width: contentWidth - 100,
             lineBreak: true
           });
 
-          doc.font('Helvetica').fontSize(8);
-          doc.fillColor('#666666');
-          doc.text(`Amount: ${formatCurrency(total, currency)}`, margin + 95, cryptoY + 55);
+          doc.font('Helvetica-Bold').fontSize(9);
+          doc.fillColor('#000000');
+          doc.text('Amount to Send', margin + 95, cryptoY + 65);
+
+          doc.font('Helvetica-Bold').fontSize(12);
+          doc.fillColor(chainColor);
+          doc.text(`${formatCurrency(total, currency)}`, margin + 95, cryptoY + 78);
           doc.fillColor('#000000');
 
-          doc.y = cryptoY + 110;
+          doc.y = cryptoY + 120;
         }
 
         doc.moveDown(1);
