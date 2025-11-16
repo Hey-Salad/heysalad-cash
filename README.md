@@ -1,4 +1,4 @@
-# HeySalad® Cash 🥗💸
+# HeySalad ® Cash 💸
 
 ![HeySalad Banner](public/heysalad-logo-black.png)
 
