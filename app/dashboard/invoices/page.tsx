@@ -48,6 +48,7 @@ export default function InvoicesPage() {
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendForm, setSendForm] = useState({
+    method: 'email' as 'email' | 'sms',
     to: '',
     subject: '',
     message: ''
@@ -85,6 +86,7 @@ export default function InvoicesPage() {
   const openSendDialog = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setSendForm({
+      method: 'email',
       to: invoice.billing_info?.billTo?.email || '',
       subject: `Invoice ${invoice.invoice_number} from HeySalad Cash`,
       message: `Hi ${invoice.billing_info?.billTo?.name || 'there'},\n\nPlease find attached invoice ${invoice.invoice_number} for ${invoice.total_amount} ${invoice.currency}.\n\nYou can pay via traditional methods or using cryptocurrency (USDC) on Base or Polygon networks. Payment details and QR codes are included in the attached PDF.\n\nThank you for your business!\n\nBest regards`
@@ -96,14 +98,14 @@ export default function InvoicesPage() {
     if (!selectedInvoice) return;
 
     if (!sendForm.to.trim()) {
-      toast.error('Please enter at least one recipient email');
+      toast.error(sendForm.method === 'email' ? 'Please enter at least one recipient email' : 'Please enter at least one phone number');
       return;
     }
 
     setIsSending(true);
 
     try {
-      const emails = sendForm.to.split(',').map(email => email.trim()).filter(Boolean);
+      const recipients = sendForm.to.split(',').map(r => r.trim()).filter(Boolean);
 
       const response = await fetch(`/api/invoices/${selectedInvoice.id}/send`, {
         method: 'POST',
@@ -111,7 +113,8 @@ export default function InvoicesPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          to: emails,
+          method: sendForm.method,
+          to: recipients,
           subject: sendForm.subject,
           message: sendForm.message
         })
@@ -281,44 +284,82 @@ export default function InvoicesPage() {
           <DialogHeader>
             <DialogTitle>Send Invoice</DialogTitle>
             <DialogDescription>
-              Send {selectedInvoice?.invoice_number} via email with crypto payment options
+              Send {selectedInvoice?.invoice_number} via email or SMS
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Method Selection */}
             <div className="space-y-2">
-              <Label htmlFor="to">To (comma-separated for multiple)</Label>
+              <Label>Send Method</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="method"
+                    value="email"
+                    checked={sendForm.method === 'email'}
+                    onChange={(e) => setSendForm({ ...sendForm, method: 'email', to: selectedInvoice?.billing_info?.billTo?.email || '' })}
+                    className="w-4 h-4"
+                  />
+                  <Mail className="h-4 w-4" />
+                  <span className="text-sm">Email</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="method"
+                    value="sms"
+                    checked={sendForm.method === 'sms'}
+                    onChange={(e) => setSendForm({ ...sendForm, method: 'sms', to: '' })}
+                    className="w-4 h-4"
+                  />
+                  <Send className="h-4 w-4" />
+                  <span className="text-sm">SMS</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="to">
+                {sendForm.method === 'email' ? 'Email Address(es)' : 'Phone Number(s)'} (comma-separated for multiple)
+              </Label>
               <Input
                 id="to"
-                type="email"
+                type={sendForm.method === 'email' ? 'email' : 'tel'}
                 value={sendForm.to}
                 onChange={(e) => setSendForm({ ...sendForm, to: e.target.value })}
-                placeholder="customer@example.com, another@example.com"
+                placeholder={sendForm.method === 'email' ? 'customer@example.com, another@example.com' : '+1234567890, +0987654321'}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input
-                id="subject"
-                value={sendForm.subject}
-                onChange={(e) => setSendForm({ ...sendForm, subject: e.target.value })}
-              />
-            </div>
+            {sendForm.method === 'email' && (
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject</Label>
+                <Input
+                  id="subject"
+                  value={sendForm.subject}
+                  onChange={(e) => setSendForm({ ...sendForm, subject: e.target.value })}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
+              <Label htmlFor="message">Message {sendForm.method === 'sms' && '(160 chars max recommended)'}</Label>
               <textarea
                 id="message"
                 className="w-full min-h-[150px] p-3 text-sm border rounded-md"
                 value={sendForm.message}
                 onChange={(e) => setSendForm({ ...sendForm, message: e.target.value })}
+                placeholder={sendForm.method === 'email' ? 'Optional custom message...' : 'Optional custom SMS message (default includes invoice link)...'}
               />
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-xs text-blue-800">
-                💎 The PDF will include crypto payment options with wallet addresses and QR codes for Base and Polygon networks.
+                {sendForm.method === 'email'
+                  ? '💎 The PDF will be attached with crypto payment options including wallet addresses and QR codes for Base and Polygon networks.'
+                  : '📱 An SMS will be sent with invoice details and a secure download link (valid for 7 days).'}
               </p>
             </div>
           </div>
@@ -339,8 +380,8 @@ export default function InvoicesPage() {
                 </>
               ) : (
                 <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Email
+                  {sendForm.method === 'email' ? <Mail className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />}
+                  Send {sendForm.method === 'email' ? 'Email' : 'SMS'}
                 </>
               )}
             </Button>

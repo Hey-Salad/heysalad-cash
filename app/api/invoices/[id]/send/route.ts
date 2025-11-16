@@ -3,10 +3,95 @@ import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server-client';
 
 const SendInvoiceSchema = z.object({
-  to: z.array(z.string().email()).min(1, 'At least one recipient is required'),
-  subject: z.string().min(1, 'Subject is required'),
+  method: z.enum(['email', 'sms']).default('email'),
+  to: z.array(z.string()).min(1, 'At least one recipient is required'),
+  subject: z.string().optional(),
   message: z.string().optional()
 });
+
+// Helper function to send invoice via SMS
+async function sendInvoiceSMS(
+  invoice: any,
+  phoneNumbers: string[],
+  customMessage: string | undefined,
+  invoiceId: string,
+  supabase: any
+) {
+  // Check if Twilio is configured
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+    console.error('Twilio not configured');
+    return NextResponse.json(
+      { error: 'SMS service not configured. Please add Twilio credentials to environment variables.' },
+      { status: 500 }
+    );
+  }
+
+  const twilio = require('twilio');
+  const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+  // Get invoice PDF URL (create signed URL if it exists)
+  let pdfUrl = null;
+  if (invoice.storage_path) {
+    const { data: urlData } = await supabase.storage
+      .from('invoices')
+      .createSignedUrl(invoice.storage_path, 604800); // 7 days
+    pdfUrl = urlData?.signedUrl;
+  }
+
+  const defaultMessage = `Invoice ${invoice.invoice_number} from HeySalad Cash\n\nAmount: ${invoice.total_amount} ${invoice.currency}\nDue: ${new Date(invoice.due_date).toLocaleDateString()}\n\n${pdfUrl ? `View invoice: ${pdfUrl}` : 'Download link will be sent separately.'}`;
+
+  const smsMessage = customMessage || defaultMessage;
+
+  const results = [];
+  for (const phoneNumber of phoneNumbers) {
+    try {
+      const result = await client.messages.create({
+        body: smsMessage,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber
+      });
+
+      results.push({ phoneNumber, success: true, sid: result.sid });
+
+      // Log successful SMS
+      await supabase.from('invoice_sms').insert({
+        invoice_id: invoiceId,
+        to_phone: phoneNumber,
+        message: smsMessage,
+        send_status: 'sent',
+        twilio_sid: result.sid
+      });
+    } catch (error: any) {
+      console.error(`Failed to send SMS to ${phoneNumber}:`, error);
+      results.push({ phoneNumber, success: false, error: error.message });
+
+      // Log failed SMS
+      await supabase.from('invoice_sms').insert({
+        invoice_id: invoiceId,
+        to_phone: phoneNumber,
+        message: smsMessage,
+        send_status: 'failed',
+        error_message: error.message
+      });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+
+  if (successCount > 0) {
+    // Update invoice status to 'sent'
+    await supabase
+      .from('invoices')
+      .update({ status: 'sent' })
+      .eq('id', invoiceId);
+  }
+
+  return NextResponse.json({
+    success: successCount > 0,
+    message: `SMS sent to ${successCount} of ${phoneNumbers.length} recipient(s)`,
+    results
+  });
+}
 
 export async function POST(
   req: NextRequest,
@@ -35,7 +120,7 @@ export async function POST(
       );
     }
 
-    const { to, subject, message } = parseResult.data;
+    const { method, to, subject, message } = parseResult.data;
     const { id: invoiceId } = await params;
 
     // Fetch invoice
@@ -53,6 +138,12 @@ export async function POST(
       );
     }
 
+    // Handle SMS method
+    if (method === 'sms') {
+      return await sendInvoiceSMS(invoice, to, message, invoiceId, supabase);
+    }
+
+    // Handle Email method (existing logic)
     // Download PDF from storage
     const { data: pdfData, error: downloadError } = await supabase.storage
       .from('invoices')
