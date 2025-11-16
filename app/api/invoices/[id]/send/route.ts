@@ -10,7 +10,7 @@ const SendInvoiceSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -36,7 +36,7 @@ export async function POST(
     }
 
     const { to, subject, message } = parseResult.data;
-    const invoiceId = params.id;
+    const { id: invoiceId } = await params;
 
     // Fetch invoice
     const { data: invoice, error: fetchError } = await supabase
