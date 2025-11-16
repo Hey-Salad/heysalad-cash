@@ -25,7 +25,7 @@ struct WifiNetwork {
 };
 
 constexpr std::array<WifiNetwork, 3> WIFI_NETWORKS{{
-    {"YOUR_WIFI_SSID_1", "YOUR_WIFI_PASSWORD_1"},
+    {"GutenTag%800", "HeySalad_02"},
     {"YOUR_WIFI_SSID_2", "YOUR_WIFI_PASSWORD_2"},
     {"YOUR_WIFI_SSID_3", "YOUR_WIFI_PASSWORD_3"}
 }};

@@ -61,11 +61,12 @@ export default function TerminalPage() {
     if (!ip) return;
 
     try {
-      const response = await fetch(`http://${ip}/api/display/status`, {
-        method: 'GET',
+      const response = await fetch('/api/terminal/device/status', {
+        method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + btoa('admin:change-me')
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ terminalIP: ip })
       });
 
       if (response.ok) {
@@ -87,11 +88,12 @@ export default function TerminalPage() {
 
     setIsConnecting(true);
     try {
-      const response = await fetch(`http://${terminalIP}/api/display/status`, {
-        method: 'GET',
+      const response = await fetch('/api/terminal/device/status', {
+        method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + btoa('admin:change-me')
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ terminalIP })
       });
 
       if (response.ok) {
@@ -120,13 +122,13 @@ export default function TerminalPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://${savedIP}/api/display/qr`, {
+      const response = await fetch('/api/terminal/qr', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('admin:change-me')
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          terminalIP: savedIP,
           data: qrData,
           label: qrLabel || 'Payment Request'
         })
@@ -152,11 +154,12 @@ export default function TerminalPage() {
   const returnToIdle = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://${savedIP}/api/display/idle`, {
+      const response = await fetch('/api/terminal/idle', {
         method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + btoa('admin:change-me')
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ terminalIP: savedIP })
       });
 
       if (response.ok) {

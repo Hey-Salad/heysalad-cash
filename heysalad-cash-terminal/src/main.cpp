@@ -1985,13 +1985,27 @@ void HeySaladCameraServer::drawIpOverlay()
     String ip = (WiFi.getMode() == WIFI_AP) ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
     const int16_t w = Config::DISPLAY_CONFIG.width;
     const int16_t h = Config::DISPLAY_CONFIG.height;
-    const int16_t barH = 18;
-    display->fillRect(0, h - barH, w, barH, display->color565(0, 0, 0));
-    display->setTextColor(GC9A01A_WHITE, display->color565(0, 0, 0));
+
+    // Calculate text bounds for centering
+    int16_t x1, y1;
+    uint16_t textW, textH;
+    String ipText = "IP: " + ip;
     display->setTextSize(1);
-    display->setCursor(6, h - barH + 4);
-    display->print(F("IP: "));
-    display->print(ip);
+    display->getTextBounds(ipText.c_str(), 0, 0, &x1, &y1, &textW, &textH);
+
+    // Center horizontally, position in lower-middle area (safe for round display)
+    const int16_t textX = (w - textW) / 2;
+    const int16_t textY = h - 50;  // 50px from bottom, safe for round display
+
+    // Draw semi-transparent background for readability
+    const int16_t padding = 4;
+    display->fillRect(textX - padding, textY - padding, textW + padding * 2, textH + padding * 2,
+                      display->color565(0, 0, 0));
+
+    // Draw centered text
+    display->setTextColor(GC9A01A_WHITE);
+    display->setCursor(textX, textY);
+    display->print(ipText);
 }
 
 void HeySaladCameraServer::drawQRCode(const char* data, const char* label)
