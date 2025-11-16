@@ -14,6 +14,7 @@
 #include <Preferences.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <qrcode.h>
 
 #include <algorithm>
 #include <string>
@@ -37,6 +38,14 @@ constexpr uint32_t LAURA_STATUS_INTERVAL_MS = Config::LAURA_API.status_interval_
 constexpr uint32_t LAURA_COMMAND_POLL_INTERVAL_MS = Config::LAURA_API.command_poll_interval_s * 1000UL;
 constexpr uint32_t BLE_CHUNK_DELAY_MS = 50;
 constexpr size_t BLE_CHUNK_SIZE = 200;
+
+// Display modes for payment terminal
+enum class DisplayMode {
+    IDLE_BMP,      // Display speed BMP images
+    PAYMENT_QR     // Display QR code for payment
+};
+
+DisplayMode currentDisplayMode = DisplayMode::IDLE_BMP;
 
 #ifdef HEYSALAD_AUDIO_ENABLE
 static Transcriber g_transcriber;
@@ -139,6 +148,8 @@ private:
     void drawPlaceholderColor(uint16_t color565);
     bool drawRgb565Asset(const char* path);
     void drawIpOverlay();
+    void drawQRCode(const char* data, const char* label = nullptr);
+    void setDisplayMode(DisplayMode mode, const char* qrData = nullptr, const char* qrLabel = nullptr);
 
     String buildStatusPayload() const;
     void fillStatusJson(JsonDocument& doc) const;
@@ -851,6 +862,63 @@ void HeySaladCameraServer::setupServer()
         request->send(200, "application/json", payload);
     });
 #endif
+
+    // Display control endpoints for payment terminal
+    server.on("/api/display/qr", HTTP_POST, [this](AsyncWebServerRequest* request) {}, nullptr,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            if (!ensureAuthenticated(request, true)) return;
+
+            DynamicJsonDocument doc(1024);
+            DeserializationError error = deserializeJson(doc, data, len);
+            if (error) {
+                request->send(400, "application/json", "{\"error\":\"invalid_json\"}");
+                return;
+            }
+
+            if (!doc.containsKey("data")) {
+                request->send(400, "application/json", "{\"error\":\"missing_qr_data\"}");
+                return;
+            }
+
+            String qrData = doc["data"].as<String>();
+            String qrLabel = doc.containsKey("label") ? doc["label"].as<String>() : String("Payment Request");
+
+            setDisplayMode(DisplayMode::PAYMENT_QR, qrData.c_str(), qrLabel.c_str());
+
+            DynamicJsonDocument response(256);
+            response["success"] = true;
+            response["mode"] = "payment_qr";
+            response["data"] = qrData;
+            response["label"] = qrLabel;
+            String payload;
+            serializeJson(response, payload);
+            request->send(200, "application/json", payload);
+        }
+    );
+
+    server.on("/api/display/idle", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        if (!ensureAuthenticated(request, true)) return;
+
+        setDisplayMode(DisplayMode::IDLE_BMP);
+
+        DynamicJsonDocument response(128);
+        response["success"] = true;
+        response["mode"] = "idle_bmp";
+        String payload;
+        serializeJson(response, payload);
+        request->send(200, "application/json", payload);
+    });
+
+    server.on("/api/display/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (!ensureAuthenticated(request, true)) return;
+
+        DynamicJsonDocument response(256);
+        response["mode"] = (currentDisplayMode == DisplayMode::PAYMENT_QR) ? "payment_qr" : "idle_bmp";
+        response["display_ready"] = displayReady;
+        String payload;
+        serializeJson(response, payload);
+        request->send(200, "application/json", payload);
+    });
 
     // Serve static files from /assets/ directory
     server.on("/assets/*", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -1924,6 +1992,90 @@ void HeySaladCameraServer::drawIpOverlay()
     display->setCursor(6, h - barH + 4);
     display->print(F("IP: "));
     display->print(ip);
+}
+
+void HeySaladCameraServer::drawQRCode(const char* data, const char* label)
+{
+    if (!displayReady || display == nullptr) {
+        Serial.println(F("[Display] Display not ready for QR code"));
+        return;
+    }
+
+    if (data == nullptr || data[0] == '\0') {
+        Serial.println(F("[Display] No QR data provided"));
+        return;
+    }
+
+    // Clear screen with white background
+    display->fillScreen(GC9A01A_WHITE);
+
+    // Create QR code
+    QRCode qrcode;
+    uint8_t qrcodeData[qrcode_getBufferSize(6)];  // Version 6 for reasonable size
+    qrcode_initText(&qrcode, qrcodeData, 6, ECC_LOW, data);
+
+    // Calculate QR code display size
+    const int16_t displayWidth = Config::DISPLAY_CONFIG.width;
+    const int16_t displayHeight = Config::DISPLAY_CONFIG.height;
+    const int16_t qrSize = qrcode.size;
+
+    // Reserve space for label at top if provided
+    const int16_t labelHeight = (label != nullptr) ? 30 : 0;
+    const int16_t availableHeight = displayHeight - labelHeight - 20;  // 20px padding at bottom
+
+    // Calculate module size to fit QR code in available space
+    const int16_t maxModuleSize = min(availableHeight / qrSize, displayWidth / qrSize);
+    const int16_t moduleSize = max(maxModuleSize, (int16_t)2);  // Minimum 2px per module
+
+    const int16_t qrPixelSize = qrSize * moduleSize;
+    const int16_t qrX = (displayWidth - qrPixelSize) / 2;
+    const int16_t qrY = labelHeight + ((availableHeight - qrPixelSize) / 2);
+
+    // Draw label if provided
+    if (label != nullptr) {
+        display->setTextColor(GC9A01A_BLACK, GC9A01A_WHITE);
+        display->setTextSize(2);
+        display->setCursor(10, 8);
+        display->println(label);
+    }
+
+    // Draw QR code
+    for (uint8_t y = 0; y < qrSize; y++) {
+        for (uint8_t x = 0; x < qrSize; x++) {
+            uint16_t color = qrcode_getModule(&qrcode, x, y) ? GC9A01A_BLACK : GC9A01A_WHITE;
+            display->fillRect(
+                qrX + (x * moduleSize),
+                qrY + (y * moduleSize),
+                moduleSize,
+                moduleSize,
+                color
+            );
+        }
+    }
+
+    // Add "Scan to Pay" instruction at bottom
+    display->setTextColor(GC9A01A_BLACK, GC9A01A_WHITE);
+    display->setTextSize(1);
+    display->setCursor((displayWidth - 72) / 2, displayHeight - 15);
+    display->println(F("Scan to Pay"));
+
+    Serial.printf("[Display] QR code displayed: %s\n", label ? label : "No label");
+}
+
+void HeySaladCameraServer::setDisplayMode(DisplayMode mode, const char* qrData, const char* qrLabel)
+{
+    currentDisplayMode = mode;
+
+    if (mode == DisplayMode::PAYMENT_QR) {
+        if (qrData != nullptr) {
+            drawQRCode(qrData, qrLabel);
+        } else {
+            Serial.println(F("[Display] Payment mode requested but no QR data provided"));
+        }
+    } else {
+        // Idle mode - show speed BMP
+        setDisplayImage(Config::SPEEDY_IMAGE);
+    }
 }
 
 }  // namespace
