@@ -66,22 +66,27 @@ export async function POST(req: NextRequest) {
     // Get user profile for company info (optional - use fallback if not found)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name, company_name, email, username')
-      .eq('id', user.id)
+      .select('id, full_name, company_name, email, username')
+      .eq('auth_user_id', user.id)
       .maybeSingle();
 
     // Use profile data if available, otherwise fallback to auth user data
     const companyName = profile?.company_name || profile?.full_name || profile?.username || user.email || 'Your Company';
     const companyEmail = profile?.email || user.email;
 
-    // Get user's wallet addresses
-    const { data: wallets, error: walletsError } = await supabase
-      .from('wallets')
-      .select('blockchain, wallet_address')
-      .eq('user_id', user.id);
+    // Get user's wallet addresses (use profile_id, not user_id)
+    let wallets: Array<{ blockchain: string; wallet_address: string }> = [];
+    if (profile?.id) {
+      const { data: walletsData, error: walletsError } = await supabase
+        .from('wallets')
+        .select('blockchain, wallet_address')
+        .eq('profile_id', profile.id);
 
-    if (walletsError) {
-      console.error('Error fetching wallets:', walletsError);
+      if (walletsError) {
+        console.error('Error fetching wallets:', walletsError);
+      } else {
+        wallets = walletsData || [];
+      }
     }
 
     // Generate invoice number if not provided
