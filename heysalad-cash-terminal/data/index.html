@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HeySalad Camera</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1034 1034'%3E%3Cpath fill='%23ed4b4c' d='M622.5 190.5c25-2.1 49 1.8 72 11.5 41.7 20.1 77.9 47.6 108.5 82.5 53.7 67.7 73.1 144.3 58 230-16 85-58.1 153.5-126.5 205.5-27.3 19.2-57 33.8-89 44-42.3 13.8-85.7 23.2-130 28-63 6.8-124 -1.2-183-24-39.8-16.3-73.6-40.8-101.5-73.5-34.6-39.4-59.6-84.4-75-135-21.8-98.6 15.7-162.4 112.5-191.5 43.1-11.3 86.9-16.8 131.5-16.5 14 0.4 28 0.7 42 1 8.3 0.1 16.4-0.4 24.5-1.5 5-4.5 9.2-9.7 12.5-15.5 17.3-33.4 37.7-64.7 61-94 16-18.8 35.2-33.3 57.5-43.5 8.3-3 16.7-5.5 25-7.5z'/%3E%3Cpath fill='%23bc3d3d' d='M653.5 311.5c-8.6-0.9-17.3-1.2-26-1 7.7-0.7 15.6-1.3 23.5-2 1.4 0.6 2.2 1.6 2.5 3z'/%3E%3Cpath d='M627.5 310.5c8.7-0.2 17.4 0.1 26 1 36.6 8.9 64.4 29.5 83.5 62 26.5 45.6 32.8 93.9 19 145-12 42.6-32.3 80.6-61 114-17.9 21.3-38.4 39.5-61.5 54.5-38 19.3-78.4 30.3-121 33-55.5 5.6-109.2-1.7-161-22-61.9-27.3-85.4-74.1-70.5-140.5 6.4-39 24.6-71.2 54.5-96.5 19.5-14.7 41.1-19.7 65-15 24.4 7.7 39.9 23.9 46.5 48.5 0.9 9.7-0.4 19-4 28-3.9 7.9-8.5 15.2-14 22-14 14.7-28 29.3-42 44-18.7 33.7-10.2 58 25.5 72.5 35.4 16 72.1 20.3 110 13 16.1-5.1 24.1-16.1 24-33-0.9-13.1-4.1-25.6-9.5-37.5-10.4-21.3-20.1-43-29-65-2-8.7 1.2-12 9.5-9.5 9.4 7.4 18.3 15.6 26.5 24.5 14.7 18.4 30.6 35.9 47.5 52.5 18.3 16.1 38 17.7 59 5 20-14.6 33.7-33.8 41.5-57.5 12.4-34.5 9.4-67.5-9-99-3.8-5.2-8.3-9.7-13.5-13.5-4.5-2.1-9.1-2.8-14-2-4.5 1.7-8.8 3.7-13 6-13.7 8.8-27.7 17.2-42 25-38.8 16.5-61.3 4-67.5-54.5-0.4-34.7 9.6-66 30-94 18.7-15.8 40.2-25.1 64.5-28z'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #ffd0cd;
+      color: #1f1f1f;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .logo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 30px;
+      background: white;
+      border-bottom: 1px solid #ffd0cd;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-svg {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000;
+      margin: 0;
+    }
+    .subtitle-text {
+      font-size: 14px;
+      color: #666;
+      margin-left: 10px;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      justify-items: center;
+    }
+    canvas {
+      width: 240px;
+      height: 240px;
+      border-radius: 120px;
+      background: #000;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #ed4c4c;
+      color: #fff;
+      transition: transform 120ms ease;
+    }
+    button.secondary {
+      background: #faa09a;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    .status {
+      background: #fff;
+      border-radius: 1rem;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+      width: min(480px, 100%);
+    }
+    .status h2 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+    .ai-panel pre {
+      background: rgba(0,0,0,0.05);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      overflow: auto;
+      max-height: 220px;
+    }
+    .ai-controls {
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.3rem 1rem;
+      font-size: 0.95rem;
+    }
+    dt { font-weight: 600; }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.8rem;
+      color: rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-header">
+    <div class="logo-container">
+      <div class="logo-svg">
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="40px" height="40px" viewBox="0 0 1034 1034" style="shape-rendering:geometricPrecision; fill-rule:evenodd; clip-rule:evenodd">
+          <g><path style="opacity:1" fill="#ed4b4c" d="M 622.5,190.5 C 647.468,188.424 671.468,192.257 694.5,202C 736.188,222.11 772.355,249.61 803,284.5C 856.748,352.155 876.081,428.822 861,514.5C 845.109,599.499 802.943,667.999 734.5,720C 707.168,739.166 677.501,753.832 645.5,764C 603.174,777.834 559.841,787.167 515.5,792C 452.455,798.788 391.455,790.788 332.5,768C 292.7,751.688 258.866,727.188 231,694.5C 196.435,655.056 171.435,610.056 156,559.5C 134.229,460.921 171.729,397.088 268.5,368C 311.556,356.677 355.389,351.177 400,351.5C 413.999,351.878 427.999,352.211 442,352.5C 450.265,352.637 458.432,352.137 466.5,351C 471.506,346.474 475.673,341.307 479,335.5C 496.345,302.122 516.678,270.788 540,241.5C 556.028,222.748 575.195,208.248 597.5,198C 605.826,195.008 614.16,192.508 622.5,190.5 Z"/></g>
+          <g><path style="opacity:1" fill="#bc3d3d" d="M 653.5,311.5 C 644.867,310.623 636.2,310.289 627.5,310.5C 635.235,309.819 643.068,309.152 651,308.5C 652.417,309.078 653.25,310.078 653.5,311.5 Z"/></g>
+          <g><path style="opacity:1" fill="#010000" d="M 627.5,310.5 C 636.2,310.289 644.867,310.623 653.5,311.5C 690.067,320.371 717.901,341.037 737,373.5C 763.497,419.064 769.83,467.398 756,518.5C 744.025,561.124 723.692,599.124 695,632.5C 677.118,653.82 656.618,671.987 633.5,687C 595.467,706.259 555.134,717.259 512.5,720C 457.011,725.644 403.344,718.311 351.5,698C 289.619,670.739 266.119,623.906 281,557.5C 287.389,518.5 305.556,486.333 335.5,461C 354.966,446.308 376.633,441.308 400.5,446C 424.862,453.695 440.362,469.862 447,494.5C 447.907,504.15 446.574,513.484 443,522.5C 439.123,530.369 434.456,537.702 429,544.5C 415,559.167 401,573.833 387,588.5C 368.311,622.248 376.811,646.414 412.5,661C 447.899,676.97 484.566,681.303 522.5,674C 538.617,668.886 546.617,657.886 546.5,641C 545.594,627.945 542.427,615.445 537,603.5C 526.557,582.167 516.89,560.501 508,538.5C 506.045,529.786 509.212,526.62 517.5,529C 526.934,536.431 535.768,544.598 544,553.5C 558.724,571.896 574.558,589.396 591.5,606C 609.789,622.066 629.456,623.733 650.5,611C 670.395,596.405 684.228,577.238 692,553.5C 704.439,519.018 701.439,486.018 683,454.5C 679.167,449.333 674.667,444.833 669.5,441C 665.042,438.859 660.375,438.193 655.5,439C 651.047,440.726 646.714,442.726 642.5,445C 628.831,453.837 614.831,462.17 600.5,470C 561.706,486.507 539.206,474.007 533,432.5C 532.56,397.819 542.56,366.486 563,338.5C 581.679,322.745 603.179,313.412 627.5,310.5 Z"/></g>
+        </svg>
+      </div>
+      <span class="logo-text">HeySalad Camera</span>
+      <span class="subtitle-text" id="subtitle">Booting…</span>
+    </div>
+  </div>
+  <main>
+    <canvas id="streamCanvas" width="240" height="240"></canvas>
+    <div class="controls">
+      <button id="startBtn">Start Stream</button>
+      <button id="stopBtn" class="secondary">Stop Stream</button>
+    </div>
+    <section class="status">
+      <dl>
+        <dt>State</dt><dd id="stateValue">Idle</dd>
+        <dt>FPS</dt><dd id="fpsValue">0.0</dd>
+        <dt>Frames</dt><dd id="frameCount">0</dd>
+        <dt>WiFi</dt><dd id="wifiValue">Disconnected</dd>
+        <dt>Heap</dt><dd id="heapValue">0 B</dd>
+      </dl>
+    </section>
+    <section class="status ai-panel">
+      <h2>AI Detection</h2>
+      <p>Status: <strong id="aiState">Disabled</strong></p>
+      <p>Last Run: <span id="aiLastRun">Never</span></p>
+      <div class="controls ai-controls">
+        <button id="aiEnableBtn">Enable AI</button>
+        <button id="aiDisableBtn" class="secondary">Disable</button>
+        <button id="aiRunBtn">Run Snapshot</button>
+      </div>
+      <pre id="aiResults">No detections yet.</pre>
+    </section>
+    <section class="status">
+      <h2>Live Captions</h2>
+      <p>Status: <strong id="sttState">Off</strong></p>
+      <div class="controls">
+        <button id="sttStart">Start Captions</button>
+        <button id="sttStop" class="secondary">Stop Captions</button>
+      </div>
+      <div style="margin: 0.75rem 0;">
+        <details>
+          <summary style="cursor:pointer">Configure Realtime STT</summary>
+          <div style="display:grid; gap:0.5rem; margin-top:0.5rem;">
+            <label>WebSocket URL
+              <input id="sttUrl" type="text" placeholder="wss://..." style="width:100%; padding:8px; border-radius:8px; border:1px solid #ffd0cd;" />
+            </label>
+            <label>API Key
+              <input id="sttKey" type="password" placeholder="••••••" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ffd0cd;" />
+            </label>
+            <label style="display:flex; align-items:center; gap:8px;">
+              <input id="sttHandshake" type="checkbox"/>
+              Send initial handshake JSON
+            </label>
+            <div>
+              <button id="sttSave" class="secondary">Save STT Settings</button>
+            </div>
+          </div>
+        </details>
+      </div>
+      <pre id="transcripts" style="max-height:200px; overflow:auto; background: rgba(0,0,0,0.05); border-radius: 0.75rem; padding: 0.75rem; white-space: pre-wrap;"></pre>
+    </section>
+  </main>
+  <footer>
+    &copy; <span id="year"></span> HeySalad &middot; PlatformIO build
+  </footer>
+  <script>
+    const canvas = document.getElementById('streamCanvas');
+    const ctx = canvas.getContext('2d');
+    const subtitle = document.getElementById('subtitle');
+    const stateValue = document.getElementById('stateValue');
+    const fpsValue = document.getElementById('fpsValue');
+    const frameCount = document.getElementById('frameCount');
+    const wifiValue = document.getElementById('wifiValue');
+    const heapValue = document.getElementById('heapValue');
+    const yearEl = document.getElementById('year');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const aiStateEl = document.getElementById('aiState');
+    const aiLastRunEl = document.getElementById('aiLastRun');
+    const aiResultsEl = document.getElementById('aiResults');
+    const aiEnableBtn = document.getElementById('aiEnableBtn');
+    const aiDisableBtn = document.getElementById('aiDisableBtn');
+    const aiRunBtn = document.getElementById('aiRunBtn');
+    const sttStateEl = document.getElementById('sttState');
+    const sttStartBtn = document.getElementById('sttStart');
+    const sttStopBtn = document.getElementById('sttStop');
+    const sttUrl = document.getElementById('sttUrl');
+    const sttKey = document.getElementById('sttKey');
+    const sttHandshake = document.getElementById('sttHandshake');
+    const sttSave = document.getElementById('sttSave');
+
+    yearEl.textContent = new Date().getFullYear();
+
+    function updateStatus(status) {
+      stateValue.textContent = status.streaming ? 'Streaming' : 'Idle';
+      fpsValue.textContent = status.fps?.toFixed(1) ?? '0.0';
+      frameCount.textContent = status.frames_sent ?? 0;
+      const net = status.network ?? {};
+      if (net.mode === 'ap') {
+        wifiValue.textContent = `AP: ${net.ssid} (${net.ip})`;
+      } else if (net.mode === 'sta') {
+        wifiValue.textContent = `${net.ssid} (${net.ip}) @ ${net.rssi} dBm`;
+      } else {
+        wifiValue.textContent = 'Disconnected';
+      }
+      heapValue.textContent = `${status.heap_free} B`;
+      subtitle.textContent = `Firmware v${status.version ?? '1.0.0'}`;
+      if (status.stt) {
+        const s = status.stt;
+        sttStateEl.textContent = s.enabled ? (s.connected ? 'On (Connected)' : (s.ws_configured ? 'On (Connecting...)' : 'On (No URL)')) : 'Off';
+      }
+      renderAi(status.ai);
+    }
+
+    function renderAi(ai) {
+      if (!ai) {
+        aiStateEl.textContent = 'Unavailable';
+        aiLastRunEl.textContent = 'Never';
+        aiResultsEl.textContent = 'No detections yet.';
+        return;
+      }
+      aiStateEl.textContent = ai.enabled ? `Enabled (${ai.model || 'default'})` : 'Disabled';
+      aiLastRunEl.textContent = ai.last_run_ms ? `${(ai.last_run_ms / 1000).toFixed(1)}s since boot` : 'Never';
+      if (Array.isArray(ai.detections) && ai.detections.length) {
+        const lines = ai.detections.map((det, idx) => {
+          const score = (det.score ?? 0).toFixed(2);
+          const position = `x:${(det.x ?? 0).toFixed(2)} y:${(det.y ?? 0).toFixed(2)} w:${(det.w ?? 0).toFixed(2)} h:${(det.h ?? 0).toFixed(2)}`;
+          return `${idx + 1}. ${det.label || 'object'} (${score}) -> ${position}`;
+        });
+        aiResultsEl.textContent = lines.join('\\n');
+      } else {
+        aiResultsEl.textContent = 'No detections yet.';
+      }
+    }
+
+    async function sendAiRequest(path, payload = null) {
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload ? JSON.stringify(payload) : '{}'
+        });
+        if (!res.ok) {
+          throw new Error('AI request failed');
+        }
+        const json = await res.json();
+        renderAi(json.ai || json);
+      } catch (err) {
+        console.error(err);
+        aiResultsEl.textContent = 'AI request failed.';
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const json = await res.json();
+        updateStatus(json);
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      fetch('/api/stream/start', { method: 'POST' }).then(fetchStatus);
+    });
+    stopBtn.addEventListener('click', () => {
+      fetch('/api/stream/stop', { method: 'POST' }).then(fetchStatus);
+    });
+    aiEnableBtn.addEventListener('click', () => sendAiRequest('/api/ai/enable'));
+    aiDisableBtn.addEventListener('click', () => sendAiRequest('/api/ai/disable'));
+    aiRunBtn.addEventListener('click', () => sendAiRequest('/api/ai/run'));
+    sttStartBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/stt/start', { method: 'POST' });
+        if (res.ok) fetchStatus();
+      } catch (_) {}
+    });
+    sttStopBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/stt/stop', { method: 'POST' });
+        if (res.ok) fetchStatus();
+      } catch (_) {}
+    });
+    sttSave.addEventListener('click', async () => {
+      try {
+        const body = { ws_url: sttUrl.value.trim(), api_key: sttKey.value.trim(), handshake: !!sttHandshake.checked };
+        const res = await fetch('/api/stt/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (res.ok) fetchStatus();
+      } catch (_) {}
+    });
+
+    const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = new WebSocket(`${wsProto}${location.host}/ws`);
+    socket.binaryType = 'arraybuffer';
+    const transcriptsEl = document.getElementById('transcripts');
+
+    socket.addEventListener('message', evt => {
+      if (typeof evt.data === 'string') {
+        try {
+          const json = JSON.parse(evt.data);
+          updateStatus(json);
+          if (json.ai) {
+            renderAi(json.ai);
+          }
+          if (json.type === 'transcript' && typeof json.text === 'string') {
+            transcriptsEl.textContent += json.text;
+            transcriptsEl.scrollTop = transcriptsEl.scrollHeight;
+          }
+        } catch (_) {
+          // ignore text payloads
+        }
+        return;
+      }
+      const blob = new Blob([evt.data], { type: 'image/jpeg' });
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(blob);
+    });
+
+    socket.addEventListener('close', () => {
+      subtitle.textContent = 'WebSocket disconnected';
+    });
+
+    setInterval(fetchStatus, 5000);
+    fetchStatus();
+  </script>
+</body>
+</html>
