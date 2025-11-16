@@ -63,19 +63,16 @@ export async function POST(req: NextRequest) {
 
     const payload = parseResult.data;
 
-    // Get user profile for company info
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile for company info (optional - use fallback if not found)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, company_name, email, username')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      );
-    }
+    // Use profile data if available, otherwise fallback to auth user data
+    const companyName = profile?.company_name || profile?.full_name || profile?.username || user.email || 'Your Company';
+    const companyEmail = profile?.email || user.email;
 
     // Get user's wallet addresses
     const { data: wallets, error: walletsError } = await supabase
@@ -139,8 +136,8 @@ export async function POST(req: NextRequest) {
       items: payload.items,
       notes: payload.notes,
       terms: payload.terms,
-      companyName: profile.company_name || profile.full_name || profile.username || 'Your Company',
-      companyEmail: profile.email,
+      companyName,
+      companyEmail,
       cryptoPayments: cryptoPayments.length > 0 ? cryptoPayments : undefined
     });
 

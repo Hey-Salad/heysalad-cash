@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, FileText, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, FileText, Plus, Trash2, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 
 interface InvoiceLineItem {
   description: string;
@@ -173,11 +173,22 @@ export default function InvoiceGeneratorPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-32">
       <div className="container max-w-2xl px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Request Payment</h1>
-          <p className="text-sm text-muted-foreground">
-            Generate a crypto invoice in seconds
-          </p>
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/dashboard')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Request Payment</h1>
+            <p className="text-sm text-muted-foreground">
+              Generate a crypto invoice in seconds
+            </p>
+          </div>
         </div>
 
         {/* Amount Display */}
