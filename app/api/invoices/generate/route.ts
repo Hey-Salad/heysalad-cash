@@ -141,92 +141,111 @@ export async function POST(req: NextRequest) {
       cryptoPayments: cryptoPayments.length > 0 ? cryptoPayments : undefined
     });
 
-    // Upload PDF to Supabase Storage
+    // Upload PDF to Supabase Storage (optional - invoice will still work without it)
     const storagePath = `${user.id}/${invoiceNumber}-${Date.now()}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from('invoices')
-      .upload(storagePath, pdfBuffer, {
-        contentType: 'application/pdf',
-        cacheControl: '3600',
-        upsert: true
-      });
+    let pdfUrl = null;
 
-    if (uploadError) {
-      console.error('Error uploading PDF:', uploadError);
-      return NextResponse.json(
-        { error: 'Failed to store invoice PDF' },
-        { status: 500 }
-      );
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('invoices')
+        .upload(storagePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.warn('Storage not available (optional):', uploadError.message);
+      } else {
+        // Create signed URL (valid for 1 hour)
+        const { data: urlData, error: urlError } = await supabase.storage
+          .from('invoices')
+          .createSignedUrl(storagePath, 3600);
+
+        if (urlError) {
+          console.warn('Could not create signed URL:', urlError.message);
+        } else {
+          pdfUrl = urlData?.signedUrl;
+        }
+      }
+    } catch (storageError) {
+      console.warn('Supabase Storage not configured (optional):', storageError);
     }
 
-    // Create signed URL (valid for 1 hour)
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from('invoices')
-      .createSignedUrl(storagePath, 3600);
+    // Store invoice metadata in database (optional - invoice will still download)
+    let invoice = null;
+    try {
+      const { data: invoiceData, error: insertError } = await supabase
+        .from('invoices')
+        .insert({
+          user_id: user.id,
+          invoice_number: invoiceNumber,
+          storage_path: pdfUrl ? storagePath : null,
+          pdf_url: pdfUrl,
+          billing_info: {
+            billTo: payload.billTo,
+            issueDate: issueDate.toISOString(),
+            dueDate: dueDate.toISOString()
+          },
+          total_amount: totalAmount,
+          currency: payload.currency,
+          issue_date: issueDate.toISOString(),
+          due_date: dueDate.toISOString(),
+          notes: payload.notes,
+          terms: payload.terms,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-    if (urlError) {
-      console.error('Error creating signed URL:', urlError);
+      if (insertError) {
+        console.warn('Could not save invoice to database:', insertError.message);
+      } else {
+        invoice = invoiceData;
+      }
+    } catch (dbError) {
+      console.warn('Database insert failed (invoice will still download):', dbError);
     }
 
-    // Store invoice metadata in database
-    const { data: invoice, error: insertError } = await supabase
-      .from('invoices')
-      .insert({
-        user_id: user.id,
-        invoice_number: invoiceNumber,
-        storage_path: storagePath,
-        pdf_url: urlData?.signedUrl,
-        billing_info: {
-          billTo: payload.billTo,
-          issueDate: issueDate.toISOString(),
-          dueDate: dueDate.toISOString()
-        },
-        total_amount: totalAmount,
-        currency: payload.currency,
-        issue_date: issueDate.toISOString(),
-        due_date: dueDate.toISOString(),
-        notes: payload.notes,
-        terms: payload.terms,
-        status: 'pending'
-      })
-      .select()
-      .single();
+    // Store invoice line items (optional - only if invoice was saved)
+    if (invoice?.id) {
+      try {
+        const itemsToInsert = payload.items.map((item) => ({
+          invoice_id: invoice.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          tax_rate: item.taxRate || 0,
+          amount: item.quantity * item.unitPrice * (1 + (item.taxRate || 0) / 100)
+        }));
 
-    if (insertError) {
-      console.error('Error inserting invoice:', insertError);
-      return NextResponse.json(
-        { error: 'Failed to save invoice metadata' },
-        { status: 500 }
-      );
-    }
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(itemsToInsert);
 
-    // Store invoice line items
-    const itemsToInsert = payload.items.map((item) => ({
-      invoice_id: invoice.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      tax_rate: item.taxRate || 0,
-      amount: item.quantity * item.unitPrice * (1 + (item.taxRate || 0) / 100)
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('invoice_items')
-      .insert(itemsToInsert);
-
-    if (itemsError) {
-      console.error('Error inserting invoice items:', itemsError);
+        if (itemsError) {
+          console.warn('Could not save invoice items:', itemsError.message);
+        }
+      } catch (itemsErr) {
+        console.warn('Failed to insert invoice items (optional):', itemsErr);
+      }
     }
 
     // Return PDF as blob
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${invoiceNumber}.pdf"`,
+      'X-Invoice-Number': invoiceNumber
+    };
+
+    // Add invoice ID header if it was saved
+    if (invoice?.id) {
+      headers['X-Invoice-Id'] = invoice.id;
+    }
+
     return new NextResponse(pdfBuffer, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${invoiceNumber}.pdf"`,
-        'X-Invoice-Id': invoice.id,
-        'X-Invoice-Number': invoiceNumber
-      }
+      headers
     });
   } catch (error) {
     console.error('Error generating invoice:', error);
