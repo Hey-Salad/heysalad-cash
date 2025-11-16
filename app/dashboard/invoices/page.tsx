@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { FileText, Plus, Send, Eye, Loader2, Mail } from 'lucide-react';
+import { FileText, Plus, Send, Eye, Loader2, Mail, ArrowLeft } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -152,91 +152,108 @@ export default function InvoicesPage() {
 
   if (isLoading) {
     return (
-      <div className="container max-w-6xl py-8">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background pb-20">
+        <div className="container max-w-2xl px-4 py-6">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container max-w-6xl py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Invoices</h1>
-          <p className="text-muted-foreground">
-            Manage your invoices with crypto payment options
-          </p>
-        </div>
-        <Button onClick={() => router.push('/dashboard/invoices/generate')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Invoice
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container max-w-2xl px-4 py-6 space-y-4">
+        {/* Header with Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/dashboard')}
+          className="gap-2 mb-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
         </Button>
-      </div>
+
+        <div className="flex flex-col gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Invoices</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your invoices with crypto payment options
+            </p>
+          </div>
+          <Button onClick={() => router.push('/dashboard/invoices/generate')} className="w-full h-12">
+            <Plus className="h-4 w-4 mr-2" />
+            New Invoice
+          </Button>
+        </div>
 
       {invoices.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No invoices yet</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
-              Create your first invoice with built-in crypto payment options
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-base font-semibold mb-2">No invoices yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 text-center">
+              Create your first invoice with crypto payments
             </p>
-            <Button onClick={() => router.push('/dashboard/invoices/generate')}>
+            <Button onClick={() => router.push('/dashboard/invoices/generate')} className="w-full">
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-4">
           {invoices.map((invoice) => (
-            <Card key={invoice.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{invoice.invoice_number}</h3>
-                      <Badge className={getStatusColor(invoice.status)}>
-                        {getStatusLabel(invoice.status)}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>
-                        <span className="font-medium">To:</span>{' '}
-                        {invoice.billing_info?.billTo?.name || 'N/A'}
-                      </p>
-                      <p>
-                        <span className="font-medium">Amount:</span>{' '}
-                        <span className="text-lg font-bold text-foreground">
-                          {invoice.total_amount.toFixed(2)} {invoice.currency}
-                        </span>
-                      </p>
-                      <p>
-                        <span className="font-medium">Issue Date:</span>{' '}
-                        {dayjs(invoice.issue_date).format('MMM D, YYYY')}
-                      </p>
-                      <p>
-                        <span className="font-medium">Due Date:</span>{' '}
-                        {dayjs(invoice.due_date).format('MMM D, YYYY')}
-                        {dayjs().isAfter(dayjs(invoice.due_date)) && invoice.status !== 'paid' && (
-                          <Badge variant="destructive" className="ml-2">
-                            Overdue
-                          </Badge>
-                        )}
-                      </p>
-                      <p className="text-xs">
-                        Created {dayjs(invoice.created_at).fromNow()}
-                      </p>
+            <Card key={invoice.id}>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-base font-semibold">{invoice.invoice_number}</h3>
+                        <Badge className={getStatusColor(invoice.status)}>
+                          {getStatusLabel(invoice.status)}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p>
+                          <span className="font-medium">To:</span>{' '}
+                          {invoice.billing_info?.billTo?.name || 'N/A'}
+                        </p>
+                        <p>
+                          <span className="font-medium">Amount:</span>{' '}
+                          <span className="text-base font-bold text-foreground">
+                            {invoice.total_amount.toFixed(2)} {invoice.currency}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="font-medium">Issue:</span>{' '}
+                          {dayjs(invoice.issue_date).format('MMM D, YYYY')}
+                        </p>
+                        <p>
+                          <span className="font-medium">Due:</span>{' '}
+                          {dayjs(invoice.due_date).format('MMM D, YYYY')}
+                          {dayjs().isAfter(dayjs(invoice.due_date)) && invoice.status !== 'paid' && (
+                            <Badge variant="destructive" className="ml-2 text-xs">
+                              Overdue
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-xs">
+                          {dayjs(invoice.created_at).fromNow()}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => handleViewPDF(invoice)}
                       variant="outline"
                       size="sm"
+                      className="w-full"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       View
@@ -245,6 +262,7 @@ export default function InvoicesPage() {
                       onClick={() => openSendDialog(invoice)}
                       variant="default"
                       size="sm"
+                      className="w-full"
                     >
                       <Send className="h-4 w-4 mr-2" />
                       Send
@@ -329,6 +347,7 @@ export default function InvoicesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

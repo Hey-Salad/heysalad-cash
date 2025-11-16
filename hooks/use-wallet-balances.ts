@@ -51,13 +51,13 @@ export function useWalletBalances() {
       if (!address) return "0";
 
       try {
-        // Query the database directly
+        // Query the database directly - use maybeSingle() to handle 0 rows gracefully
         const { data, error } = await supabaseRef.current
           .from("wallets")
           .select("balance")
           .eq("wallet_address", address.toLowerCase())
           .eq("blockchain", chainType.toUpperCase())
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error(`Error fetching ${chainType} balance from DB:`, error);
