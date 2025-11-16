@@ -4,7 +4,7 @@ import { WalletBalance } from "@/components/wallet-balance";
 import { WalletActions } from "@/components/wallet-actions";
 import { ActiveChainBadge } from "@/components/active-chain-badge";
 import { Button } from "@/components/ui/button";
-import { LogOut, FileText } from "lucide-react";
+import { LogOut, FileText, Monitor } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 import Link from "next/link";
 
@@ -51,7 +51,7 @@ export default async function BalanceTab({ walletModels }: Props) {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Link href="/dashboard/invoices/generate">
             <Card className="w-full cursor-pointer hover:bg-accent transition-colors">
               <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
@@ -61,6 +61,19 @@ export default async function BalanceTab({ walletModels }: Props) {
                 <div className="text-center">
                   <p className="font-semibold">Invoices</p>
                   <p className="text-xs text-muted-foreground">Request payment</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/terminal">
+            <Card className="w-full cursor-pointer hover:bg-accent transition-colors">
+              <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <Monitor className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold">Terminal</p>
+                  <p className="text-xs text-muted-foreground">Control display</p>
                 </div>
               </CardContent>
             </Card>
