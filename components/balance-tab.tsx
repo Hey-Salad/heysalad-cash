@@ -53,10 +53,10 @@ export default async function BalanceTab({ walletModels }: Props) {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
           <Link href="/dashboard/invoices/generate">
-            <Card className="w-full cursor-pointer hover:bg-accent transition-colors border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+            <Card className="w-full cursor-pointer hover:bg-accent transition-colors">
               <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <FileText className="h-6 w-6" />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold">Invoices</p>
@@ -67,10 +67,10 @@ export default async function BalanceTab({ walletModels }: Props) {
           </Link>
 
           <Link href="/dashboard/terminal">
-            <Card className="w-full cursor-pointer hover:bg-accent transition-colors border-green-500/20 bg-gradient-to-br from-green-500/5 to-green-500/10">
+            <Card className="w-full cursor-pointer hover:bg-accent transition-colors">
               <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
-                <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CreditCard className="h-6 w-6 text-green-600" />
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <CreditCard className="h-6 w-6" />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold">Terminal</p>

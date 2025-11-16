@@ -170,39 +170,25 @@ export default function InvoiceGeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-32">
-      <div className="container max-w-2xl px-4 py-6 space-y-6">
+    <div className="min-h-screen bg-background pb-40">
+      <div className="container max-w-2xl px-4 py-6 space-y-4">
         {/* Header */}
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard')}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">Request Payment</h1>
-            <p className="text-sm text-muted-foreground">
-              Generate a crypto invoice in seconds
-            </p>
-          </div>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/dashboard')}
+          className="gap-2 mb-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
 
-        {/* Amount Display */}
-        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-1">
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-4xl font-bold tracking-tight">
-                {totals.total.toFixed(2)}
-              </p>
-              <p className="text-lg font-medium text-primary">USDC</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-1 mb-6">
+          <h1 className="text-2xl font-bold">Request Payment</h1>
+          <p className="text-sm text-muted-foreground">
+            Fill in the details below to generate an invoice
+          </p>
+        </div>
 
         {/* Customer Info */}
         <Card>
@@ -370,22 +356,12 @@ export default function InvoiceGeneratorPage() {
         </Card>
 
         {/* Payment Info */}
-        <Card className="border-primary/20 bg-primary/5">
+        <Card>
           <CardContent className="pt-6">
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm">Payment Methods Included</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-blue-500" />
-                  <span className="text-sm">Base Network (USDC)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-purple-500" />
-                  <span className="text-sm">Polygon Network (USDC)</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground pt-2">
-                Your wallet addresses and QR codes will be automatically included in the PDF invoice.
+              <h2 className="font-semibold text-base">Payment Methods</h2>
+              <p className="text-sm text-muted-foreground">
+                Invoice will include wallet addresses and QR codes for Base and Polygon networks (USDC).
               </p>
             </div>
           </CardContent>
@@ -450,22 +426,21 @@ export default function InvoiceGeneratorPage() {
       </div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t z-50">
         <div className="container max-w-2xl">
           <Button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full h-14 text-lg font-semibold"
+            className="w-full h-12"
             size="lg"
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Generating Invoice...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
               </>
             ) : (
               <>
-                <FileText className="mr-2 h-5 w-5" />
                 Generate Invoice ({totals.total.toFixed(2)} USDC)
               </>
             )}
